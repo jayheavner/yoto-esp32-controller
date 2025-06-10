@@ -64,8 +64,8 @@ class ImageModel(QAbstractListModel):
 
 async def get_cards():
     """Use existing YotoClient to get cards"""
-    username = os.getenv("YOTO_USERNAME") or os.getenv("YOTO_EMAIL")
-    password = os.getenv("YOTO_PASSWORD") or os.getenv("YOTO_PASS")
+    username = os.getenv("YOTO_USERNAME")
+    password = os.getenv("YOTO_PASSWORD")
     
     if not (username and password):
         raise RuntimeError("Set YOTO_USERNAME and YOTO_PASSWORD environment variables")
