@@ -75,14 +75,7 @@ class Device:
 class Card:
     id: str
     title: str
-    author: Optional[str] = None
     description: Optional[str] = None
-    
-    def __str__(self) -> str:
-        if self.author:
-            return f"{self.title} by {self.author}"
-        return self.title
-
 
 class YotoAPI:
     def __init__(self):
@@ -182,9 +175,7 @@ class YotoAPI:
                 
                 card = Card(
                     id=card_data.get('cardId', ''),
-                    title=card_info.get('title', 'Unknown'),
-                    author=metadata.get('author'),
-                    description=metadata.get('description')
+                    title=card_info.get('title', 'Unknown')
                 )
                 self.library[card.id] = card
                 
