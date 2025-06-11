@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
@@ -7,6 +8,9 @@ from desktop_ui.qt_models.card_model import CardModel
 
 
 def main() -> int:
+    # Set Qt Quick Controls style to Basic to allow background customization
+    os.environ["QT_QUICK_CONTROLS_STYLE"] = "Basic"
+    
     coordinator = DesktopCoordinator()
     
     try:
@@ -19,7 +23,9 @@ def main() -> int:
     engine = QQmlApplicationEngine()
     
     model = CardModel(cards)
+    
     engine.rootContext().setContextProperty("imageModel", model)
+    engine.rootContext().setContextProperty("coordinator", coordinator)
     
     qml_file = Path(__file__).parent / "qml" / "MainWindow.qml"
     engine.load(qml_file)
