@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
 from core.data_models import Card
+import logging
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class YotoAPIClient:
@@ -91,6 +93,29 @@ class YotoAPIClient:
         except Exception as e:
             print(f"Get library error: {e}")
             return []
+    
+    def get_card_chapters(self, card_id: str) -> Optional[List[Dict[str, Any]]]:
+        try:
+            url = f"{self.base_url}/card/details/{card_id}"
+            response = self.session.get(url, headers=self._get_auth_headers())
+
+            if response.status_code != 200:
+                logger.error(f"Get card detail failed: {response.status_code} - {response.text}")
+                return None
+
+            detail = response.json()
+            chapters = detail.get("card", {}).get("content", {}).get("chapters", [])
+
+            if not chapters:
+                logger.info(f"No chapters found for card {card_id}")
+                return []
+
+            logger.info(f"Found {len(chapters)} chapters for card {card_id}")
+            return chapters
+
+        except Exception as e:
+            logger.error(f"Error retrieving chapters for card {card_id}: {e}")
+            return None
     
     def _get_or_download_artwork(self, card_id: str, card_info: Dict[str, Any]) -> Optional[Path]:
         # Check if cached artwork exists with any extension
