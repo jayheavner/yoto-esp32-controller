@@ -220,7 +220,21 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Play/Pause clicked")
+                        // Toggle the playing state
+                        isPlaying = !isPlaying
+                        console.log("Play/Pause clicked - now", isPlaying ? "playing" : "paused")
+                        
+                        // If we just started playing, navigate to Now Playing screen
+                        if (isPlaying && window.selectedCard) {
+                            var stackView = root.parent
+                            if (stackView) {
+                                stackView.push("NowPlayingView.qml", {
+                                    "cardId": window.selectedCard.cardId,
+                                    "cardTitle": window.selectedCard.title || "Unknown",
+                                    "cardImagePath": window.selectedCard.imagePath
+                                })
+                            }
+                        }
                     }
                 }
                 

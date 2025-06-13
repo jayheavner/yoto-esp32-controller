@@ -165,7 +165,17 @@ Item {
                         anchors.fill: parent
                         onClicked: {
                             console.log("Chapter clicked:", modelData.title, "Key:", modelData.key)
-                            // Future: Navigate to "Now Playing" UI
+                            
+                            // Navigate to Now Playing with this specific chapter
+                            var stackView = root.parent
+                            if (stackView && window.selectedCard) {
+                                stackView.push("NowPlayingView.qml", {
+                                    "cardId": root.cardId,
+                                    "cardTitle": root.cardTitle,
+                                    "cardImagePath": window.selectedCard.imagePath,
+                                    "activeChapter": modelData
+                                })
+                            }
                         }
                     }
                 }
