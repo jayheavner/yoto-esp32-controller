@@ -8,6 +8,76 @@ Item {
         anchors.fill: parent
         color: "#111"
         
+        // Now Playing icon - top right
+        Item {
+            id: nowPlayingIcon
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 15
+            width: 60
+            height: 40
+            visible: coordinator.showNowPlaying
+            
+            // Sound wave bars (3 bars)
+            Row {
+                anchors.centerIn: parent
+                spacing: 3
+                
+                // Bar 1
+                Rectangle {
+                    width: 4
+                    height: coordinator.isPlaying ? 20 : 8
+                    color: "#00ff88"
+                    radius: 2
+                    
+                    Behavior on height {
+                        NumberAnimation { duration: 300 }
+                    }
+                }
+                
+                // Bar 2
+                Rectangle {
+                    width: 4
+                    height: coordinator.isPlaying ? 16 : 12
+                    color: "#00ff88"
+                    radius: 2
+                    
+                    Behavior on height {
+                        NumberAnimation { duration: 400 }
+                    }
+                }
+                
+                // Bar 3
+                Rectangle {
+                    width: 4
+                    height: coordinator.isPlaying ? 24 : 6
+                    color: "#00ff88"
+                    radius: 2
+                    
+                    Behavior on height {
+                        NumberAnimation { duration: 350 }
+                    }
+                }
+            }
+            
+            // Click area for navigation
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    console.log("Now Playing icon clicked from DetailView")
+                    // Navigate to Now Playing view
+                    var stackView = root.parent
+                    if (stackView) {
+                        stackView.push("NowPlayingView.qml", {
+                            "cardId": coordinator.activeCardId,
+                            "cardTitle": coordinator.currentCardTitle,
+                            "cardImagePath": "" // Will be filled by actual card data
+                        })
+                    }
+                }
+            }
+        }
+        
         // Back button - top left (larger for children)
         Button {
             id: backButton
@@ -170,13 +240,11 @@ Item {
                     }
                 }
                 
-                // Play/Pause Button (larger for children)
+                // Play/Pause Button - shows opposite action based on current state
                 Button {
                     id: playButton
                     width: 90
                     height: 90
-                    
-                    property bool isPlaying: false  // State for play/pause toggle
                     
                     background: Rectangle {
                         color: playButton.pressed ? "#555" : "#333"
@@ -185,7 +253,7 @@ Item {
                         border.width: 2
                     }
                     
-                    // Play/Pause icon that switches based on state
+                    // Play/Pause icon that shows opposite action
                     Canvas {
                         anchors.centerIn: parent
                         width: 35
@@ -196,12 +264,12 @@ Item {
                             ctx.fillStyle = "#fff"
                             ctx.beginPath()
                             
-                            if (playButton.isPlaying) {
-                                // Pause icon (two rectangles)
+                            if (coordinator.isPlaying) {
+                                // Show pause icon (two rectangles) when playing
                                 ctx.fillRect(8, 6, 6, 23)
                                 ctx.fillRect(21, 6, 6, 23)
                             } else {
-                                // Play triangle icon
+                                // Show play triangle icon when stopped/paused
                                 ctx.moveTo(10, 6)
                                 ctx.lineTo(28, 17.5)
                                 ctx.lineTo(10, 29)
@@ -210,22 +278,20 @@ Item {
                             }
                         }
                         
-                        // Redraw when state changes
+                        // Redraw when coordinator state changes
                         Connections {
-                            target: playButton
-                            function onIsPlayingChanged() {
+                            target: coordinator
+                            function onPlaybackStateChanged() {
                                 parent.requestPaint()
                             }
                         }
                     }
                     
                     onClicked: {
-                        // Toggle the playing state
-                        isPlaying = !isPlaying
-                        console.log("Play/Pause clicked - now", isPlaying ? "playing" : "paused")
+                        console.log("Play/Pause clicked - current state:", coordinator.playbackStatus)
                         
-                        // If we just started playing, navigate to Now Playing screen
-                        if (isPlaying && window.selectedCard) {
+                        // Navigate to Now Playing screen when clicked
+                        if (window.selectedCard) {
                             var stackView = root.parent
                             if (stackView) {
                                 stackView.push("NowPlayingView.qml", {
