@@ -32,6 +32,8 @@ class DesktopCoordinator(QObject):
                 self.api_client = YotoAPIClient()
                 if self.api_client.authenticate(username, password):
                     self._is_authenticated = True
+                    # Preload library for card titles
+                    self.api_client.get_library()
                     # Connect to state changes for automatic UI updates
                     self.api_client.add_state_callback(self._on_state_change)
                     logger.info("Coordinator initialized with MQTT state monitoring")

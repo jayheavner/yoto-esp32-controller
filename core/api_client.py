@@ -41,6 +41,9 @@ class YotoAPIClient:
         self.active_card_id: Optional[str] = None
         self.current_card_title: Optional[str] = None
         self.devices: Dict[str, Dict[str, Any]] = {}  # For backward compatibility
+
+        # Library cache {card_id: Card}
+        self.library: Dict[str, Card] = {}
         
         # State change callbacks
         self._state_callbacks: List[Callable[[], None]] = []
@@ -337,7 +340,20 @@ class YotoAPIClient:
     
     def _get_card_title(self, card_id: str) -> Optional[str]:
         """Get card title from library cache or return card_id as fallback"""
-        # This is a simple implementation - could be enhanced to cache library data
+        try:
+            # Attempt lookup in cached library
+            if card_id in self.library:
+                return self.library[card_id].title
+
+            # If library not yet loaded, try to load it
+            if not self.library:
+                self.get_library()
+                if card_id in self.library:
+                    return self.library[card_id].title
+
+        except Exception as e:
+            logger.error(f"Error retrieving title for card {card_id}: {e}")
+
         return f"Card {card_id}"
     
     @property
@@ -358,6 +374,7 @@ class YotoAPIClient:
                 
             data = response.json()
             cards = []
+            self.library.clear()
             
             for card_data in data.get('cards', []):
                 card_info = card_data.get('card', {})
@@ -372,6 +389,7 @@ class YotoAPIClient:
                     card.art_path = art_path
                 
                 cards.append(card)
+                self.library[card_id] = card
                 
             logger.info(f"Loaded {len(cards)} cards from library")
             return cards
