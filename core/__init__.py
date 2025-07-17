@@ -1,0 +1,1 @@
+"""Core application logic - portable across desktop and ESP32 platforms."""
