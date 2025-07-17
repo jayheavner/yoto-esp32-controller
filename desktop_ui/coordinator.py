@@ -118,36 +118,35 @@ class DesktopCoordinator(QObject):
         """ID of the currently active card"""
         if not self.api_client:
             return ""
-        return getattr(self.api_client, 'active_card_id', '')
+        return getattr(self.api_client, 'active_card_id', '') or ""
     
-    @Property(str, notify=activeCardChanged)
     @Property(str, notify=activeCardChanged)
     def currentCardTitle(self) -> str:
-        if not self.api_client or not self.api_client.active_card_id:
-            return ""
-        return self.api_client.active_card_id
-    
-    @Property(str, notify=activeCardChanged)
-    @Property(str, notify=activeCardChanged)
-    def activeCardImagePath(self) -> str:
-        if not self.api_client or not self.api_client.current_card_title:
-            return ""
-        return self.api_client.current_card_title
-
-    @Property(str, notify=activeCardChanged)
-    @Property(str, notify=activeCardChanged)
-    def currentChapterTitle(self) -> str:
-        if not self.api_client or not self.api_client.active_card_id:
-            return ""
-
-        return self.getCardArtwork(self.api_client.active_card_id)
-    
-    @Property(str, notify=activeCardChanged)
-    def currentTrackTitle(self) -> str:
-        """Title of currently playing chapter from MQTT"""
+        """Title of the currently active card from MQTT."""
         if not self.api_client:
             return ""
-        return getattr(self.api_client, 'current_chapter_title', '')
+        return getattr(self.api_client, "current_card_title", "") or ""
+    
+    @Property(str, notify=activeCardChanged)
+    def activeCardImagePath(self) -> str:
+        """File URL to the active card's artwork."""
+        if not self.api_client or not self.api_client.active_card_id:
+            return ""
+        return self.getCardArtwork(self.api_client.active_card_id)
+
+    @Property(str, notify=playbackStateChanged)
+    def currentChapterTitle(self) -> str:
+        """Title of the chapter currently playing."""
+        if not self.api_client:
+            return ""
+        return getattr(self.api_client, "current_chapter_title", "") or ""
+    
+    @Property(str, notify=playbackStateChanged)
+    def currentTrackTitle(self) -> str:
+        """Title of the currently playing track."""
+        if not self.api_client:
+            return ""
+        return getattr(self.api_client, "current_track_title", "") or ""
     
     @Property(int, notify=playbackStateChanged)
     def trackPosition(self) -> int:
@@ -183,6 +182,23 @@ class DesktopCoordinator(QObject):
     @Property(str, notify=playbackStateChanged)
     def formattedDuration(self) -> str:
         return self._format_time(self.property('trackLength'))
+
+    @Property(str, notify=playbackStateChanged)
+    def currentChapterIconUrl(self) -> str:
+        """Icon URL for the chapter currently playing, if available."""
+        if not self.api_client:
+            return ""
+        card_id = getattr(self.api_client, "active_card_id", None)
+        chapter_title = getattr(self.api_client, "current_chapter_title", None)
+        if not card_id or not chapter_title:
+            return ""
+        chapters = self.api_client.get_card_chapters(card_id)
+        if not chapters:
+            return ""
+        for chap in chapters:
+            if chap.get("title") == chapter_title:
+                return chap.get("iconUrl", "") or chap.get("display", {}).get("icon16x16", "")
+        return ""
     
     def getCardArtwork(self, card_id: str) -> str:
         """Get artwork path for a specific card ID"""
