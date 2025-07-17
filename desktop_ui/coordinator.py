@@ -33,6 +33,10 @@ class DesktopCoordinator(QObject):
         try:
             username = os.getenv("YOTO_USERNAME")
             password = os.getenv("YOTO_PASSWORD")
+            device_id = os.getenv("YOTO_DEVICE_ID")
+            logger.debug(
+                "Init credentials: username=%s device_id=%s", bool(username), device_id
+            )
             
             if username and password:
                 self.api_client = YotoAPIClient()
@@ -55,9 +59,15 @@ class DesktopCoordinator(QObject):
         if not self.api_client:
             return
         status = self.api_client.playback_status
+        card = getattr(self.api_client, "active_card_id", None)
         if status not in ["playing", "paused", "stopped"]:
             logger.warning(f"Unexpected playback status for further scope: {status}")
-        logger.debug(f"State change: status={status}, card={getattr(self.api_client, 'active_card_id', None)}")
+        logger.debug(
+            "State change: status=%s card=%s now_playing=%s",
+            status,
+            card,
+            bool(card),
+        )
         self.playbackStateChanged.emit()
         self.activeCardChanged.emit()
 
@@ -81,7 +91,13 @@ class DesktopCoordinator(QObject):
         """True if there's an active card (playing or paused)"""
         if not self.api_client:
             return False
-        return self.api_client.active_card_id is not None
+        value = self.api_client.active_card_id is not None
+        logger.debug(
+            "showNowPlaying property -> %s (card=%s)",
+            value,
+            self.api_client.active_card_id,
+        )
+        return value
 
     @Property(bool, notify=activeCardChanged)
     def hasActiveContent(self) -> bool:

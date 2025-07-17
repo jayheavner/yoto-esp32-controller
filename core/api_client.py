@@ -152,6 +152,12 @@ class YotoAPIClient:
             self._state_callbacks.remove(callback)
 
     def _notify_state_change(self) -> None:
+        logger.debug(
+            "Notifying %d callbacks: status=%s card=%s",
+            len(self._state_callbacks),
+            self.playback_status,
+            self.active_card_id,
+        )
         for callback in self._state_callbacks:
             try:
                 callback()
@@ -189,6 +195,7 @@ class YotoAPIClient:
             }
 
     def _on_event(self) -> None:
+        logger.debug("MQTT event received - updating state")
         self._update_state_from_player()
         self._notify_state_change()
 
@@ -203,6 +210,13 @@ class YotoAPIClient:
         if not player:
             logger.error("Device %s not found", device_id)
             return
+        logger.debug(
+            "Player update: online=%s status=%s is_playing=%s card=%s",
+            player.online,
+            player.playback_status,
+            getattr(player, "is_playing", None),
+            player.card_id,
+        )
 
         self.playback_status = player.playback_status or (
             "playing" if player.is_playing else "stopped"
@@ -216,6 +230,13 @@ class YotoAPIClient:
             self.current_card_title = self._get_card_title(player.card_id)
         else:
             self.current_card_title = None
+        logger.debug(
+            "Updated state: status=%s card=%s position=%s/%s",
+            self.playback_status,
+            self.active_card_id,
+            self.track_position,
+            self.track_length,
+        )
 
     # ------------------------------------------------------------------
     @property
