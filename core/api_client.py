@@ -119,6 +119,96 @@ class YotoAPIClient:
             logger.info("Playback stopped on device %s", device_id)
         except Exception as exc:
             logger.error("Failed to stop playback: %s", exc)
+
+    def next_track(self) -> None:
+        """Skip to the next chapter/track on the current device."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+
+        if not player.card_id:
+            logger.warning("No card loaded in device %s", device_id)
+            return
+
+        chapters = self.get_card_chapters(player.card_id) or []
+        if not chapters:
+            logger.info("No chapters available for card %s", player.card_id)
+            return
+
+        try:
+            current = int(player.track_key or player.chapter_key or "1")
+        except ValueError:
+            current = 1
+
+        if current >= len(chapters):
+            logger.info("Already at last track")
+            return
+
+        next_key = current + 1
+        logger.info("Playing chapter %02d of card %s", next_key, player.card_id)
+        self.manager.play_card(
+            device_id,
+            player.card_id,
+            secondsIn=0,
+            cutoff=0,
+            chapterKey=str(next_key).zfill(2),
+            trackKey=next_key,
+        )
+
+    def previous_track(self) -> None:
+        """Skip to the previous chapter/track on the current device."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+
+        if not player.card_id:
+            logger.warning("No card loaded in device %s", device_id)
+            return
+
+        chapters = self.get_card_chapters(player.card_id) or []
+        if not chapters:
+            logger.info("No chapters available for card %s", player.card_id)
+            return
+
+        try:
+            current = int(player.track_key or player.chapter_key or "1")
+        except ValueError:
+            current = 1
+
+        if current <= 1:
+            logger.info("Already at first track")
+            return
+
+        prev_key = current - 1
+        logger.info("Playing chapter %02d of card %s", prev_key, player.card_id)
+        self.manager.play_card(
+            device_id,
+            player.card_id,
+            secondsIn=0,
+            cutoff=0,
+            chapterKey=str(prev_key).zfill(2),
+            trackKey=prev_key,
+        )
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:

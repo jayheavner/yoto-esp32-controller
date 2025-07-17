@@ -313,11 +313,13 @@ class DesktopCoordinator(QObject):
 
     @Slot()
     def next_track(self) -> None:
-        logger.info("Next track requested - not implemented")
+        if self.api_client:
+            self.api_client.next_track()
 
     @Slot()
     def previous_track(self) -> None:
-        logger.info("Previous track requested - not implemented")
+        if self.api_client:
+            self.api_client.previous_track()
 
     def cleanup(self) -> None:
         """Clean shutdown of coordinator"""
