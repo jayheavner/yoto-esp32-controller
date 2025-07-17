@@ -232,6 +232,46 @@ class DesktopCoordinator(QObject):
         except Exception as e:
             logger.error(f"Error getting chapters for {card_id}: {e}")
             return []
+
+    # ------------------------------------------------------------------
+    # Transport control slots
+    # ------------------------------------------------------------------
+    @Slot()
+    def play(self) -> None:
+        if self.api_client:
+            self.api_client.play()
+
+    @Slot()
+    def pause(self) -> None:
+        if self.api_client:
+            self.api_client.pause()
+
+    @Slot()
+    def resume(self) -> None:
+        if self.api_client:
+            self.api_client.resume()
+
+    @Slot()
+    def stop(self) -> None:
+        if self.api_client:
+            self.api_client.stop()
+
+    @Slot()
+    def toggle_play_pause(self) -> None:
+        if not self.api_client:
+            return
+        if self.api_client.playback_status == "playing":
+            self.api_client.pause()
+        else:
+            self.api_client.play()
+
+    @Slot()
+    def next_track(self) -> None:
+        logger.info("Next track requested - not implemented")
+
+    @Slot()
+    def previous_track(self) -> None:
+        logger.info("Previous track requested - not implemented")
     
     def cleanup(self) -> None:
         """Clean shutdown of coordinator"""

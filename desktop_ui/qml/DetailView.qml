@@ -238,7 +238,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Previous chapter clicked")
+                        coordinator.previous_track()
                     }
                 }
                 
@@ -294,9 +294,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Play/Pause clicked - coordinator state:", coordinator.playbackStatus)
-                        
-                        // Navigate to Now Playing screen when clicked
+                        coordinator.toggle_play_pause()
                         if (window.selectedCard) {
                             var stackView = root.parent
                             if (stackView) {
@@ -353,7 +351,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Next chapter clicked")
+                        coordinator.next_track()
                     }
                 }
             }
