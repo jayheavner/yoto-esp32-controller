@@ -48,14 +48,14 @@ class YotoAPIClient:
             logger.error("Device %s is not online", device_id)
             return
         if not player.card_id:
-            logger.warning("No card loaded in device %s. Attempting to reload card.", device_id)
-            try:
-                player.reload_card()
-            except Exception as exc:
-                logger.error("Failed to reload card: %s", exc)
-                return
+            logger.warning(
+                "No card loaded in device %s. Cannot start playback", device_id
+            )
+            return
         try:
-            player.play()
+            # YotoPlayer objects only expose state. Use the manager to send the
+            # actual play/resume command via MQTT.
+            self.manager.resume_player(device_id)
             logger.info("Playback started on device %s", device_id)
         except Exception as exc:
             logger.error("Failed to start playback: %s", exc)
