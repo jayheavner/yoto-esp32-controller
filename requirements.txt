@@ -10,4 +10,4 @@ pytz==2025.2
 requests==2.32.3
 shiboken6==6.9.1
 urllib3==2.4.0
-
+yoto-api>=1.26.5
