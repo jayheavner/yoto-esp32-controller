@@ -20,8 +20,8 @@ Window {
             id: gridView
             
             Item {
-                width: parent.width
-                height: parent.height
+                width: stackView.width
+                height: stackView.height
                 
                 // Now Playing icon - top right
                 Item {
