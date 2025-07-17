@@ -74,7 +74,10 @@ class YotoAPIClient:
             logger.error("Device %s not found", device_id)
             return
         try:
-            player.pause()
+            # YotoPlayer objects only expose state. Use the manager to send the
+            # actual pause command via MQTT.
+            assert self.manager is not None
+            self.manager.pause_player(device_id)
             logger.info("Playback paused on device %s", device_id)
         except Exception as exc:
             logger.error("Failed to pause playback: %s", exc)

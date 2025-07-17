@@ -69,12 +69,26 @@ class DesktopCoordinator(QObject):
             return False
         return self.api_client.playback_status == "playing"
 
+    @Property(bool, notify=playbackStateChanged)
+    def isPaused(self) -> bool:
+        """True if playback is currently paused"""
+        if not self.api_client:
+            return False
+        return self.api_client.playback_status == "paused"
+
     @Property(bool, notify=activeCardChanged)
     def showNowPlaying(self) -> bool:
         """True if there's an active card (playing or paused)"""
         if not self.api_client:
             return False
         return self.api_client.active_card_id is not None
+
+    @Property(bool, notify=activeCardChanged)
+    def hasActiveContent(self) -> bool:
+        """True if a card is loaded on the device"""
+        if not self.api_client:
+            return False
+        return bool(self.api_client.active_card_id)
 
     @Property(str, notify=playbackStateChanged)
     def playbackStatus(self) -> str:
@@ -272,7 +286,7 @@ class DesktopCoordinator(QObject):
     @Slot()
     def previous_track(self) -> None:
         logger.info("Previous track requested - not implemented")
-    
+
     def cleanup(self) -> None:
         """Clean shutdown of coordinator"""
         if self.api_client:
@@ -282,3 +296,8 @@ class DesktopCoordinator(QObject):
             self.api_client = None
         self._is_authenticated = False
         logger.info("Coordinator cleaned up")
+
+    @Slot()
+    def navigateToNowPlaying(self) -> None:
+        """Placeholder slot used by tests for navigation"""
+        logger.debug("navigateToNowPlaying called")
