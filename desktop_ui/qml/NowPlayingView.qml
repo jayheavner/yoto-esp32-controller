@@ -129,36 +129,60 @@ Item {
                 color: "#222"
                 radius: 12
                 anchors.horizontalCenter: parent.horizontalCenter
-                
+
                 Column {
                     anchors.fill: parent
                     anchors.margins: 15
                     spacing: 8
-                    
-                    // Chapter title - prefer MQTT data
-                    Text {
-                        text: coordinator.currentChapterTitle || 
-                              (root.currentChapter ? root.currentChapter.title : "Chapter 1")
-                        color: "#fff"
-                        font.pixelSize: 18
-                        font.bold: true
-                        wrapMode: Text.WordWrap
-                        width: parent.width
-                        maximumLineCount: 2
-                        elide: Text.ElideRight
+
+                    Row {
+                        spacing: 10
+
+                        Image {
+                            id: chapterArtwork
+                            width: 60
+                            height: 60
+                            source: root.currentChapter ? root.currentChapter.iconUrl : coordinator.currentChapterIconUrl
+                            fillMode: Image.PreserveAspectFit
+                            visible: source !== ""
+
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "#444"
+                                visible: chapterArtwork.status !== Image.Ready
+                                radius: 8
+                            }
+                        }
+
+                        Column {
+                            spacing: 4
+
+                            // Chapter title - prefer MQTT data
+                            Text {
+                                text: coordinator.currentChapterTitle ||
+                                      (root.currentChapter ? root.currentChapter.title : "Chapter 1")
+                                color: "#fff"
+                                font.pixelSize: 18
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                            }
+
+                            // Card title
+                            Text {
+                                text: coordinator.currentCardTitle || root.cardTitle
+                                color: "#aaa"
+                                font.pixelSize: 14
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                                maximumLineCount: 1
+                                elide: Text.ElideRight
+                            }
+                        }
                     }
-                    
-                    // Card title
-                    Text {
-                        text: coordinator.currentCardTitle || root.cardTitle
-                        color: "#aaa"
-                        font.pixelSize: 14
-                        wrapMode: Text.WordWrap
-                        width: parent.width
-                        maximumLineCount: 1
-                        elide: Text.ElideRight
-                    }
-                    
+
                     // Progress bar and time info (only show if we have MQTT data)
                     Item {
                         width: parent.width
