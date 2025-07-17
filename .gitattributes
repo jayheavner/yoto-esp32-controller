@@ -1,0 +1,4 @@
+# Force .gitignore to be UTF‑8‑encoded text
+*.gitattributes text working-tree-encoding=UTF-8
+*.gitmodules  text working-tree-encoding=UTF-8
+*.env.example text working-tree-encoding=UTF-8
