@@ -1,0 +1,71 @@
+=== MQTT State Debug ===
+2025-06-16 14:00:02,651 urllib3.connectionpool DEBUG: Starting new HTTPS connection (1): api.yotoplay.com:443
+2025-06-16 14:00:03,462 urllib3.connectionpool DEBUG: https://api.yotoplay.com:443 "POST /auth/token HTTP/1.1" 200 1391
+2025-06-16 14:00:03,462 core.api_client INFO: Authentication successful. Token expires in: 86400 seconds
+2025-06-16 14:00:03,463 desktop_ui.coordinator INFO: Coordinator initialized with MQTT state monitoring
+✓ API client created
+✓ Authenticated
+❌ MQTT not connected
+  MQTT client exists: True
+  Internal connected flag: False
+  Paho connected: False
+
+=== Current State ===
+Playback Status: stopped
+Is Playing: False
+Show Now Playing: False
+Active Card ID:
+Current Card Title:
+
+=== Raw API Client State ===
+Raw playback_status: stopped
+Raw active_card_id: None
+Raw current_card_title: None
+
+=== Monitoring for 30 seconds ===
+Try changing playback state on your device now...
+2025-06-16 14:00:03,986 core.api_client INFO: MQTT connect result: 0
+2025-06-16 14:00:04,373 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"events":"OK","req_body":""}}
+⏱️ 30 seconds remaining...
+2025-06-16 14:00:04,534 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":197,"position":178,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL CH6","chapterKey":"KXsRWrPgU4","trackTitle":"Chapter 6","trackKey":"KXsRWrPgU4","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"paused","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096805}
+2025-06-16 14:00:04,535 core.api_client INFO: Playback status: paused
+2025-06-16 14:00:04,535 core.api_client INFO: Active card: fYdyg
+2025-06-16 14:00:04,541 desktop_ui.coordinator DEBUG: State change: status=paused, card=fYdyg
+🔄 State changed!
+  Playback: paused
+  Is Playing: False
+  Active Card: fYdyg
+2025-06-16 14:00:07,452 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"playbackStatus":"playing","streaming":false,"eventUtc":1750096808}
+2025-06-16 14:00:07,452 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:07,452 desktop_ui.coordinator DEBUG: State change: status=playing, card=fYdyg
+🔄 State changed!
+  Playback: playing
+  Is Playing: True
+  Active Card: fYdyg
+2025-06-16 14:00:09,467 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":197,"position":179,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL CH6","chapterKey":"KXsRWrPgU4","trackTitle":"Chapter 6","trackKey":"KXsRWrPgU4","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096810}
+2025-06-16 14:00:09,468 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:09,468 core.api_client INFO: Active card: fYdyg
+⏱️ 25 seconds remaining...
+2025-06-16 14:00:14,465 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":197,"position":184,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL CH6","chapterKey":"KXsRWrPgU4","trackTitle":"Chapter 6","trackKey":"KXsRWrPgU4","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096815}
+2025-06-16 14:00:14,465 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:14,466 core.api_client INFO: Active card: fYdyg
+⏱️ 20 seconds remaining...
+2025-06-16 14:00:17,395 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":234,"position":0,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL CH2","chapterKey":"yq8v9N9f29","trackTitle":"Chapter 2","trackKey":"yq8v9N9f29","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096818}
+2025-06-16 14:00:17,395 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:17,396 core.api_client INFO: Active card: fYdyg
+⏱️ 15 seconds remaining...
+2025-06-16 14:00:22,608 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":234,"position":5,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL CH2","chapterKey":"yq8v9N9f29","trackTitle":"Chapter 2","trackKey":"yq8v9N9f29","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096823}
+2025-06-16 14:00:22,608 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:22,608 core.api_client INFO: Active card: fYdyg
+⏱️ 10 seconds remaining...
+2025-06-16 14:00:27,620 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":85,"position":0,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL  CH4","chapterKey":"RuEqdJInE6","trackTitle":"Chapter 4","trackKey":"RuEqdJInE6","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096828}
+2025-06-16 14:00:27,620 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:27,620 core.api_client INFO: Active card: fYdyg
+⏱️ 5 seconds remaining...
+2025-06-16 14:00:32,700 core.api_client DEBUG: MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":85,"position":5,"cardId":"fYdyg","repeatAll":false,"source":"card","cardUpdatedAt":"2024-09-13T09:10:47.068Z","chapterTitle":"Yoto Brainbots Sports - CARD 11 - BASEBALL  CH4","chapterKey":"RuEqdJInE6","trackTitle":"Chapter 4","trackKey":"RuEqdJInE6","streaming":false,"volume":4,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1750096833}
+2025-06-16 14:00:32,700 core.api_client INFO: Playback status: playing
+2025-06-16 14:00:32,701 core.api_client INFO: Active card: fYdyg
+2025-06-16 14:00:33,709 core.api_client INFO: MQTT disconnected normally
+2025-06-16 14:00:34,376 core.api_client INFO: YotoAPIClient closed
+2025-06-16 14:00:34,377 desktop_ui.coordinator INFO: Coordinator cleaned up
+Debug complete

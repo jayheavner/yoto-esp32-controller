@@ -1,0 +1,65 @@
+PS C:\Users\jheavner\repos\python\home-projects\yoto>  c:; cd 'c:\Users\jheavner\repos\python\home-projects\yoto'; & 'c:\Users\jheavner\repos\python\home-projects\yoto\.venv\Scripts\python.exe' 'c:\Users\jheavner\.vscode\extensions\ms-python.debugpy-2025.8.0-win32-x64\bundled\libs\debugpy\launcher' '61183' '--' 'C:\Users\jheavner\repos\python\home-projects\yoto/yoto_mvp.py' 
+=== Logging in ===
+2025-06-08 16:56:55,168 __main__ INFO:Login successful. Token expires in: 86400 seconds
+
+=== Loading devices and library ===
+2025-06-08 16:56:55,528 __main__ INFO:Loaded 2 devices
+2025-06-08 16:56:55,721 __main__ INFO:Loaded 37 cards
+
+=== Devices (2) ===
+  1. Nolan (mini) - Offline
+  2. Nolan's Yoto (v3e) - Online
+
+=== Library (showing first 10 of 37) ===
+  1. The Wild Robot
+  2. Captain America: The First Avenger by Marvel Press
+  3. Earth Explorers - Asia  by Yoto
+  4. Claude on Holiday  by Hachette
+  5. Earth Explorers - Europe by Yoto
+  6. Star Wars: The Prequel Trilogy Stories by Disney Lucasfilm Press
+  7. Earth Explorers - South America by Yoto
+  8. Claude on the Slopes  by Hachette
+  9. Welcome to Yoto by Yoto
+  10. Earth Explorers - Australia  by Yoto
+
+=== Connecting MQTT ===
+C:\Users\jheavner\repos\python\home-projects\yoto/yoto_mvp.py:185: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  self.mqtt_client = mqtt.Client(
+2025-06-08 16:56:56,123 __main__ INFO:MQTT connection initiated
+Waiting for MQTT to stabilize...
+2025-06-08 16:56:56,247 __main__ INFO:MQTT connect result: 0
+2025-06-08 16:56:56,666 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"events":"OK","req_body":""}}
+2025-06-08 16:56:57,017 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"repeatAll":false,"volume":7,"volumeMax":16,"cardId":"none","playbackStatus":"stopped","streaming":false,"playbackWait":false,"sleepTimerActive":false,"eventUtc":1749416223}
+2025-06-08 16:56:57,017 __main__ INFO:Playback: stopped
+✓ MQTT connected
+
+=== Demo Playback ===
+Target: Nolan's Yoto (v3e) - Online
+Card: The Wild Robot
+2025-06-08 16:57:01,126 __main__ INFO:Requested play 'The Wild Robot' on Nolan's Yoto
+✓ Play command sent
+2025-06-08 16:57:02,200 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"card-play":"OK","req_body":"{\"uri\": \"https://yoto.io/2hXIN\", \"chapterKey\": \"01\", \"trackKey\": \"01\", \"secondsIn\": 0, \"cutOff\": 0}"}}
+2025-06-08 16:57:02,296 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"cardId":"2hXIN","repeatAll":false,"source":"card","cardUpdatedAt":"2024-11-30T18:51:42.347Z","chapterTitle":"Chapters 16 - 25","chapterKey":"01","trackTitle":"Chapters 16 - 25","trackKey":"01","streaming":false,"playbackStatus":"playing","eventUtc":1749416229}
+2025-06-08 16:57:02,297 __main__ INFO:Playback: playing
+2025-06-08 16:57:02,297 __main__ INFO:Active card: 2hXIN
+2025-06-08 16:57:02,421 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"trackLength":1365,"position":1,"cardId":"2hXIN","repeatAll":false,"source":"card","cardUpdatedAt":"2024-11-30T18:51:42.347Z","chapterTitle":"Chapters 16 - 25","chapterKey":"01","trackTitle":"Chapters 16 - 25","trackKey":"01","streaming":false,"volume":7,"volumeMax":16,"playbackStatus":"playing","playbackWait":false,"sleepTimerActive":false,"eventUtc":1749416229}
+2025-06-08 16:57:02,422 __main__ INFO:Playback: playing
+2025-06-08 16:57:02,422 __main__ INFO:Active card: 2hXIN
+2025-06-08 16:57:03,127 __main__ INFO:Requested pause on Nolan's Yoto
+✓ Pause command sent
+2025-06-08 16:57:03,370 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"card-pause":"OK","req_body":""}}
+2025-06-08 16:57:03,545 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"playbackStatus":"paused","streaming":false,"eventUtc":1749416230}
+2025-06-08 16:57:03,545 __main__ INFO:Playback: paused
+2025-06-08 16:57:05,128 __main__ INFO:Requested resume on Nolan's Yoto
+✓ Resume command sent
+2025-06-08 16:57:05,433 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"card-resume":"OK","req_body":""}}
+2025-06-08 16:57:05,706 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/events: {"playbackStatus":"playing","streaming":false,"eventUtc":1749416232}
+2025-06-08 16:57:05,707 __main__ INFO:Playback: playing
+2025-06-08 16:57:07,129 __main__ INFO:Requested stop on Nolan's Yoto
+✓ Stop command sent
+
+=== Demo Complete ===
+2025-06-08 16:57:07,451 __main__ INFO:MQTT device/y2nnWgEpNdDh5Bs5nMLUVGJu/response: {"status":{"card-stop":"OK","req_body":""}}
+2025-06-08 16:57:07,454 __main__ ERROR:Error during MQTT disconnect: YotoAPI._on_mqtt_disconnect() missing 1 required positional argument: 'reason_code'
+2025-06-08 16:57:07,454 __main__ INFO:MQTT disconnected
+PS C:\Users\jheavner\repos\python\home-projects\yoto> 

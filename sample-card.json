@@ -1,0 +1,46 @@
+{
+  "familyId": "63a9d064d827abd153ae0fc2",
+  "provenanceId": "674b5f37662fcbba466d86db",
+  "addedAt": "2024-11-30T18:53:43.577Z",
+  "cardId": "2hXIN",
+  "createdAt": "2024-11-30T18:53:43.577Z",
+  "masterUid": "048a4762431694",
+  "reason": "physical-add",
+  "updatedAt": "2025-06-05T01:30:39.953Z",
+  "lastPlayedAt": "2025-06-05T01:30:39.945Z",
+  "inFamilyLibrary": true,
+  "card": {
+    "title": "The Wild Robot",
+    "content": {
+      "activity": "yoto_Player",
+      "restricted": true,
+      "version": "1",
+      "playbackType": "linear",
+      "config": {
+        "resumeTimeout": 0,
+        "onlineOnly": false
+      },
+      "availability": "",
+      "cover": {
+        "imageL": "https://card-content.yotoplay.com/12JgDfDeQyaPgt9z3NAj5hze-uCs1iCXMA3KzrWiq4EQ~/pub/6W_CTb08pDC9mItKwbFo-b9Jv41A3kuJ4kKPkn7LAFc"
+      }
+    },
+    "metadata": {
+      "cover": {
+        "imageL": "https://card-content.yotoplay.com/12JgDfDeQyaPgt9z3NAj5hze-uCs1iCXMA3KzrWiq4EQ~/pub/6W_CTb08pDC9mItKwbFo-b9Jv41A3kuJ4kKPkn7LAFc?width=250"
+      },
+      "media": {
+        "duration": 15159,
+        "readableDuration": "4h 12m 33s",
+        "fileSize": 245692266,
+        "readableFileSize": 234.3,
+        "hasStreams": false
+      }
+    },
+    "cardId": "2hXIN",
+    "userId": "auth0|66551d6a90ccc8b0741294cd",
+    "createdAt": "2024-11-22T15:22:47.829Z",
+    "updatedAt": "2024-11-30T18:51:42.347Z"
+  },
+  "shareType": "myo"
+}
