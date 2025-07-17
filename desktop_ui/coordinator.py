@@ -93,6 +93,14 @@ class DesktopCoordinator(QObject):
         if not self.api_client or not self.api_client.current_card_title:
             return ""
         return self.api_client.current_card_title
+
+    @Property(str, notify=activeCardChanged)
+    def activeCardImagePath(self) -> str:
+        """File URL to artwork for the currently active card"""
+        if not self.api_client or not self.api_client.active_card_id:
+            return ""
+
+        return self.getCardArtwork(self.api_client.active_card_id)
     
     @Property(str, notify=activeCardChanged)
     def currentChapterTitle(self) -> str:
