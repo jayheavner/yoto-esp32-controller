@@ -260,7 +260,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Previous chapter clicked")
+                        coordinator.previous_track()
                     }
                 }
                 
@@ -316,8 +316,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Play/Pause clicked - coordinator state:", coordinator.playbackStatus)
-                        // For now just log - actual device control can be added later
+                        coordinator.toggle_play_pause()
                     }
                 }
                 
@@ -359,7 +358,7 @@ Item {
                     }
                     
                     onClicked: {
-                        console.log("Next chapter clicked")
+                        coordinator.next_track()
                     }
                 }
             }

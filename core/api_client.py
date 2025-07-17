@@ -78,6 +78,44 @@ class YotoAPIClient:
             logger.info("Playback paused on device %s", device_id)
         except Exception as exc:
             logger.error("Failed to pause playback: %s", exc)
+
+    def resume(self) -> None:
+        """Resume playback on the current device using yoto_api."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+        try:
+            self.manager.resume_player(device_id)
+            logger.info("Playback resumed on device %s", device_id)
+        except Exception as exc:
+            logger.error("Failed to resume playback: %s", exc)
+
+    def stop(self) -> None:
+        """Stop playback on the current device using yoto_api."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+        try:
+            self.manager.stop_player(device_id)
+            logger.info("Playback stopped on device %s", device_id)
+        except Exception as exc:
+            logger.error("Failed to stop playback: %s", exc)
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:
