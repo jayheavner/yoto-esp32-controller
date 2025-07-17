@@ -165,6 +165,11 @@ class YotoAPIClient:
             chapterKey=str(next_key).zfill(2),
             trackKey=next_key,
         )
+        # Manually refresh state because the device may not emit an update
+        if self.manager:
+            self.manager.update_players_status()
+        self._update_state_from_player()
+        self._notify_state_change()
 
     def previous_track(self) -> None:
         """Skip to the previous chapter/track on the current device."""
@@ -210,6 +215,11 @@ class YotoAPIClient:
             chapterKey=str(prev_key).zfill(2),
             trackKey=prev_key,
         )
+        # Manually refresh state because the device may not emit an update
+        if self.manager:
+            self.manager.update_players_status()
+        self._update_state_from_player()
+        self._notify_state_change()
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:
