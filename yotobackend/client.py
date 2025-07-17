@@ -6,6 +6,7 @@ library browsing, and real-time device control via MQTT.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import time
@@ -22,9 +23,15 @@ CACHE.mkdir(exist_ok=True)
 # ---------------------------------------------------------------------------
 @dataclass(slots=True)
 class DeviceState:
+    """Track per-device state information."""
+
     playback_status: Literal["playing", "paused", "stopped"] = "stopped"
     card_id: str | None = None
     volume: int = 8
+    battery: int | None = None
+    wifi_strength: int | None = None
+    temperature: float | None = None
+    ambient_light: int | None = None
 
 # ---------------------------------------------------------------------------
 @dataclass(slots=True)
@@ -62,7 +69,9 @@ class YotoClient:
         self.base_url = "https://api.yotoplay.com"
         self.client_id = "4P2do5RhHDXvCDZDZ6oti27Ft2XdRrzr"
         self.token_data: Optional[Dict[str, Any]] = None
+        self.token_expires_at: float = 0.0
         self.devices: Dict[str, YotoDevice] = {}
+        self.device_state: Dict[str, DeviceState] = {}
         self.library: Dict[str, Card] = {}
         
         # MQTT configuration
@@ -74,16 +83,30 @@ class YotoClient:
         # Device selection
         self.device_id: str | None = None
 
+        self._refresh_task: Optional[asyncio.Task] = None
+        self._state_task: Optional[asyncio.Task] = None
+        self._callbacks: list[StateCb] = []
+
     async def start(self) -> None:
         logger.info("Starting Yoto client...")
         await self._authenticate()
         await self._load_devices()
         await self._select_device()
         await self._connect_mqtt()
+        self._refresh_task = asyncio.create_task(self._refresh_loop())
+        self._state_task = asyncio.create_task(self._state_loop())
         logger.info("Yoto client started successfully")
 
     async def stop(self) -> None:
         logger.info("Stopping Yoto client...")
+        if self._refresh_task:
+            self._refresh_task.cancel()
+            with contextlib.suppress(Exception):
+                await self._refresh_task
+        if self._state_task:
+            self._state_task.cancel()
+            with contextlib.suppress(Exception):
+                await self._state_task
         await self._disconnect_mqtt()
         self.session.close()
         logger.info("Yoto client stopped")
@@ -109,7 +132,8 @@ class YotoClient:
             raise RuntimeError(f"Login failed: {response.status_code} - {response.text}")
             
         self.token_data = response.json()
-        expires_in = self.token_data.get('expires_in') if self.token_data else None
+        expires_in = self.token_data.get("expires_in", 0)
+        self.token_expires_at = time.monotonic() + float(expires_in)
         logger.info("Authentication successful. Token expires in: %s seconds", expires_in)
 
     def _get_auth_headers(self) -> Dict[str, str]:
@@ -471,4 +495,140 @@ class YotoClient:
             raise RuntimeError("Failed to send stop command")
 
     def subscribe(self, callback: StateCb) -> None:
-        raise NotImplementedError("State subscription not yet implemented")
+        """Subscribe to state change notifications."""
+        self._callbacks.append(callback)
+
+    # ------------------------------------------------------------------
+    # Internal loops
+    # ------------------------------------------------------------------
+    async def _refresh_loop(self) -> None:
+        while True:
+            await asyncio.sleep(60)
+            await self._refresh_token_if_needed()
+
+    async def _state_loop(self) -> None:
+        while True:
+            await asyncio.sleep(30)
+            await self.refresh_device_state()
+
+    async def _refresh_token_if_needed(self) -> None:
+        if time.monotonic() > self.token_expires_at - 60:
+            await self._refresh_token()
+
+    async def _refresh_token(self) -> None:
+        if not self.token_data or "refresh_token" not in self.token_data:
+            return
+        url = f"{self.base_url}/auth/token"
+        data = {
+            "client_id": self.client_id,
+            "grant_type": "refresh_token",
+            "refresh_token": self.token_data["refresh_token"],
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        resp = await asyncio.to_thread(self.session.post, url, data=data, headers=headers)
+        if resp.status_code == 200:
+            new_data = resp.json()
+            self.token_data.update(new_data)
+            expires_in = new_data.get("expires_in", 0)
+            self.token_expires_at = time.monotonic() + float(expires_in)
+            logger.info("Refreshed access token")
+        else:
+            logger.error("Failed to refresh token: %s - %s", resp.status_code, resp.text)
+
+    # ------------------------------------------------------------------
+    # Device state handling
+    # ------------------------------------------------------------------
+    async def refresh_device_state(self) -> None:
+        device_id = self._ensure_device()
+        url = f"{self.base_url}/device-v2/{device_id}/status"
+        headers = self._get_auth_headers()
+        resp = await asyncio.to_thread(self.session.get, url, headers=headers)
+        if resp.status_code != 200:
+            logger.error("Failed to fetch device status: %s", resp.text)
+            return
+        data = resp.json()
+        state = self.device_state.setdefault(device_id, DeviceState())
+        state.playback_status = data.get("playbackStatus", state.playback_status)
+        card = data.get("cardId")
+        state.card_id = None if card == "none" else card or state.card_id
+        state.volume = data.get("userVolumePercentage", state.volume)
+        state.battery = data.get("batteryLevelPercentage")
+        state.wifi_strength = data.get("wifiStrength")
+        if data.get("temperatureCelcius") is not None:
+            try:
+                state.temperature = float(data.get("temperatureCelcius"))
+            except (TypeError, ValueError):
+                state.temperature = state.temperature
+        state.ambient_light = data.get("ambientLightSensorReading")
+        for cb in list(self._callbacks):
+            try:
+                result = cb(state)
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception as exc:  # pragma: no cover
+                logger.error("Callback error: %s", exc)
+
+    # ------------------------------------------------------------------
+    # Configuration helpers
+    # ------------------------------------------------------------------
+    async def _update_player_config(self, config: Dict[str, Any]) -> None:
+        device_id = self._ensure_device()
+        url = f"{self.base_url}/device-v2/{device_id}/config"
+        payload = json.dumps({"deviceId": device_id, "config": config})
+        headers = self._get_auth_headers()
+        resp = await asyncio.to_thread(self.session.put, url, headers=headers, data=payload)
+        if resp.status_code != 200:
+            logger.error("Failed to update config: %s", resp.text)
+
+    async def set_max_volume(self, volume: int, night: bool = False) -> None:
+        key = "nightMaxVolumeLimit" if night else "maxVolumeLimit"
+        await self._update_player_config({key: str(volume)})
+
+    async def set_brightness(self, brightness: int, night: bool = False) -> None:
+        key = "nightDisplayBrightness" if night else "dayDisplayBrightness"
+        await self._update_player_config({key: str(brightness)})
+
+    async def set_ambient_color(self, color: str, night: bool = False) -> None:
+        key = "nightAmbientColour" if night else "ambientColour"
+        await self._update_player_config({key: color})
+
+    async def set_day_mode_time(self, time_str: str) -> None:
+        await self._update_player_config({"dayTime": time_str})
+
+    async def set_night_mode_time(self, time_str: str) -> None:
+        await self._update_player_config({"nightTime": time_str})
+
+    async def set_sleep_timer(self, seconds: int) -> None:
+        device_id = self._ensure_device()
+        payload = json.dumps({"seconds": seconds})
+        await self._publish_device_command(device_id, "sleep", payload)
+
+    async def enable_alarm(self, index: int) -> None:
+        await self._set_alarm_state(index, True)
+
+    async def disable_alarm(self, index: int) -> None:
+        await self._set_alarm_state(index, False)
+
+    async def _get_player_config(self) -> Dict[str, Any]:
+        device_id = self._ensure_device()
+        url = f"{self.base_url}/device-v2/{device_id}/config"
+        headers = self._get_auth_headers()
+        resp = await asyncio.to_thread(self.session.get, url, headers=headers)
+        if resp.status_code != 200:
+            logger.error("Failed to fetch config: %s", resp.text)
+            return {}
+        return resp.json().get("config", {})
+
+    async def _set_alarm_state(self, index: int, enabled: bool) -> None:
+        config = await self._get_player_config()
+        alarms = config.get("alarms", [])
+        if index >= len(alarms):
+            logger.error("Alarm %s not found", index)
+            return
+        parts = alarms[index].split(",")
+        if len(parts) >= 6:
+            parts[-1] = "1" if enabled else "0"
+            alarms[index] = ",".join(parts)
+            await self._update_player_config({"alarms": alarms})
+
+

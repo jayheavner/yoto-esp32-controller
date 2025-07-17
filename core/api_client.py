@@ -2,13 +2,14 @@ import logging
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Any
+from datetime import time
 
 import requests
 from dotenv import load_dotenv
-from yoto_api import YotoManager
+from yoto_api import YotoManager, YotoPlayerConfig
 from yoto_api.exceptions import AuthenticationError, YotoException
 
-from core.data_models import Card
+from core.data_models import Card, DeviceState
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -136,6 +137,13 @@ class YotoAPIClient:
         self.track_position: int = 0
         self.track_length: int = 0
 
+        self.device_state = DeviceState()
+
+        # Mirror key fields for backward compatibility
+        self.device_state.playback_status = self.playback_status
+        self.device_state.card_id = self.active_card_id
+        self.device_state.volume = 0
+
         self.devices: Dict[str, Dict[str, Any]] = {}
         self.library: Dict[str, Card] = {}
 
@@ -230,6 +238,19 @@ class YotoAPIClient:
             self.current_card_title = self._get_card_title(player.card_id)
         else:
             self.current_card_title = None
+
+        # Update extended device state
+        self.device_state.playback_status = self.playback_status
+        self.device_state.card_id = self.active_card_id
+        self.device_state.volume = player.user_volume or self.device_state.volume
+        self.device_state.battery = player.battery_level_percentage
+        self.device_state.wifi_strength = player.wifi_strength
+        if player.temperature_celcius is not None:
+            try:
+                self.device_state.temperature = float(player.temperature_celcius)
+            except (TypeError, ValueError):
+                pass
+        self.device_state.ambient_light = player.ambient_light_sensor_reading
         logger.debug(
             "Updated state: status=%s card=%s position=%s/%s",
             self.playback_status,
@@ -284,6 +305,79 @@ class YotoAPIClient:
                 }
             )
         return chapters
+
+    # ------------------------------------------------------------------
+    def refresh_state(self) -> None:
+        """Manually refresh player state from the API."""
+        if not self.manager:
+            return
+        self.manager.check_and_refresh_token()
+        self.manager.update_players_status()
+        self._update_state_from_player()
+
+    # ------------------------------------------------------------------
+    def set_max_volume(self, volume: int, night: bool = False) -> None:
+        key = "night_max_volume_limit" if night else "day_max_volume_limit"
+        self._apply_config(**{key: volume})
+
+    def set_display_brightness(self, brightness: int, night: bool = False) -> None:
+        key = "night_display_brightness" if night else "day_display_brightness"
+        self._apply_config(**{key: brightness})
+
+    def set_ambient_color(self, color: str, night: bool = False) -> None:
+        key = "night_ambient_colour" if night else "day_ambient_colour"
+        self._apply_config(**{key: color})
+
+    def set_day_mode_time(self, time_str: str) -> None:
+        self._apply_config(day_mode_time=time.fromisoformat(time_str))
+
+    def set_night_mode_time(self, time_str: str) -> None:
+        self._apply_config(night_mode_time=time.fromisoformat(time_str))
+
+    def set_sleep_timer(self, seconds: int) -> None:
+        if not self.manager:
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        self.manager.set_sleep(device_id, seconds)
+
+    def enable_alarm(self, index: int) -> None:
+        self._set_alarm_state(index, True)
+
+    def disable_alarm(self, index: int) -> None:
+        self._set_alarm_state(index, False)
+
+    def _apply_config(self, **kwargs: Any) -> None:
+        if not self.manager:
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        config = YotoPlayerConfig(**kwargs)
+        self.manager.set_player_config(device_id, config)
+
+    def _set_alarm_state(self, index: int, enabled: bool) -> None:
+        if not self.manager:
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        self.manager.update_players_status()
+        player = self.manager.players.get(device_id)
+        if not player or not player.config or not player.config.alarms:
+            logger.error("Alarms not available for %s", device_id)
+            return
+        if index >= len(player.config.alarms):
+            logger.error("Alarm %s out of range", index)
+            return
+        alarm = player.config.alarms[index]
+        alarm.enabled = enabled
+        config = YotoPlayerConfig(alarms=player.config.alarms)
+        self.manager.set_player_config(device_id, config)
 
     # ------------------------------------------------------------------
     def _get_or_download_artwork(
