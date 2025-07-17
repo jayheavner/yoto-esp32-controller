@@ -19,6 +19,65 @@ APIRequestError = YotoException
 
 
 class YotoAPIClient:
+    def _get_card_title(self, card_id: str) -> str:
+        """Return the card title for a given card_id, or the card_id if not found."""
+        card = self.library.get(card_id)
+        if card and hasattr(card, 'title'):
+            return card.title
+        # Try to get from manager if not in local library
+        if self.manager and hasattr(self.manager, 'library'):
+            item = self.manager.library.get(card_id)
+            if item and hasattr(item, 'title'):
+                return item.title
+        return card_id
+    def play(self) -> None:
+        """Start playback on the current device using yoto_api, with diagnostics."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+        logger.info("Player state: online=%s, card_id=%s, is_playing=%s, playback_status=%s", player.online, player.card_id, getattr(player, 'is_playing', None), getattr(player, 'playback_status', None))
+        if not player.online:
+            logger.error("Device %s is not online", device_id)
+            return
+        if not player.card_id:
+            logger.warning("No card loaded in device %s. Attempting to reload card.", device_id)
+            try:
+                player.reload_card()
+            except Exception as exc:
+                logger.error("Failed to reload card: %s", exc)
+                return
+        try:
+            player.play()
+            logger.info("Playback started on device %s", device_id)
+        except Exception as exc:
+            logger.error("Failed to start playback: %s", exc)
+
+    def pause(self) -> None:
+        """Pause playback on the current device using yoto_api."""
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if not device_id:
+            logger.error("YOTO_DEVICE_ID environment variable not set")
+            return
+        player = self.manager.players.get(device_id)
+        if not player:
+            logger.error("Device %s not found", device_id)
+            return
+        try:
+            player.pause()
+            logger.info("Playback paused on device %s", device_id)
+        except Exception as exc:
+            logger.error("Failed to pause playback: %s", exc)
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:

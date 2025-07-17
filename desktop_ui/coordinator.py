@@ -10,6 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 class DesktopCoordinator(QObject):
+    def _format_time(self, seconds: int) -> str:
+        if seconds is None or seconds < 0:
+            return "00:00"
+        m, s = divmod(int(seconds), 60)
+        return f"{m:02}:{s:02}"
+
     # Qt signals for property changes
     playbackStateChanged = Signal()
     activeCardChanged = Signal()
@@ -48,18 +54,13 @@ class DesktopCoordinator(QObject):
         """Handle state changes from MQTT"""
         if not self.api_client:
             return
-            
-        # Log unexpected states for further scope/action determination
         status = self.api_client.playback_status
         if status not in ["playing", "paused", "stopped"]:
             logger.warning(f"Unexpected playback status for further scope: {status}")
-        
-        # Emit Qt signals to update QML properties
+        logger.debug(f"State change: status={status}, card={getattr(self.api_client, 'active_card_id', None)}")
         self.playbackStateChanged.emit()
         self.activeCardChanged.emit()
-        
-        logger.debug(f"State change: status={status}, card={self.api_client.active_card_id}")
-    
+
     # Qt Properties for QML binding
     @Property(bool, notify=playbackStateChanged)
     def isPlaying(self) -> bool:
@@ -67,70 +68,91 @@ class DesktopCoordinator(QObject):
         if not self.api_client:
             return False
         return self.api_client.playback_status == "playing"
-    
-    @Property(bool, notify=activeCardChanged)  
+
+    @Property(bool, notify=activeCardChanged)
     def showNowPlaying(self) -> bool:
         """True if there's an active card (playing or paused)"""
         if not self.api_client:
             return False
         return self.api_client.active_card_id is not None
-    
+
     @Property(str, notify=playbackStateChanged)
     def playbackStatus(self) -> str:
         """Current playback status: playing, paused, stopped"""
         if not self.api_client:
             return "stopped"
         return self.api_client.playback_status
-    
+
     @Property(str, notify=activeCardChanged)
     def activeCardId(self) -> str:
-        """ID of currently active card, empty string if none"""
+        """ID of the currently active card"""
+        if not self.api_client:
+            return ""
+        return getattr(self.api_client, 'active_card_id', '')
+    
+    @Property(str, notify=activeCardChanged)
+    @Property(str, notify=activeCardChanged)
+    def currentCardTitle(self) -> str:
         if not self.api_client or not self.api_client.active_card_id:
             return ""
         return self.api_client.active_card_id
     
     @Property(str, notify=activeCardChanged)
-    def currentCardTitle(self) -> str:
-        """Title of currently active card, empty string if none"""
+    @Property(str, notify=activeCardChanged)
+    def activeCardImagePath(self) -> str:
         if not self.api_client or not self.api_client.current_card_title:
             return ""
         return self.api_client.current_card_title
 
     @Property(str, notify=activeCardChanged)
-    def activeCardImagePath(self) -> str:
-        """File URL to artwork for the currently active card"""
+    @Property(str, notify=activeCardChanged)
+    def currentChapterTitle(self) -> str:
         if not self.api_client or not self.api_client.active_card_id:
             return ""
 
         return self.getCardArtwork(self.api_client.active_card_id)
     
     @Property(str, notify=activeCardChanged)
-    def currentChapterTitle(self) -> str:
+    def currentTrackTitle(self) -> str:
         """Title of currently playing chapter from MQTT"""
         if not self.api_client:
             return ""
         return getattr(self.api_client, 'current_chapter_title', '')
-    
-    @Property(str, notify=activeCardChanged) 
-    def currentTrackTitle(self) -> str:
-        """Title of currently playing track from MQTT"""
-        if not self.api_client:
-            return ""
-        return getattr(self.api_client, 'current_track_title', '')
     
     @Property(int, notify=playbackStateChanged)
     def trackPosition(self) -> int:
         """Current playback position in seconds"""
         if not self.api_client:
             return 0
-        return getattr(self.api_client, 'track_position', 0)
+        value = getattr(self.api_client, 'track_position', 0)
+        if isinstance(value, int):
+            return value
+        try:
+            return int(value)
+        except Exception:
+            return 0
     
     @Property(int, notify=playbackStateChanged)
     def trackLength(self) -> int:
         """Total track length in seconds"""
         if not self.api_client:
             return 0
-        return getattr(self.api_client, 'track_length', 0)
+        value = getattr(self.api_client, 'track_length', 0)
+        if isinstance(value, int):
+            return value
+        try:
+            return int(value)
+        except Exception:
+            return 0
+    
+    # Removed duplicate/incorrect formattedPosition and formattedDuration
+    @Property(str, notify=playbackStateChanged)
+    def formattedPosition(self) -> str:
+        return self._format_time(self.property('trackPosition'))
+
+    @Property(str, notify=playbackStateChanged)
+    def formattedDuration(self) -> str:
+        return self._format_time(self.property('trackLength'))
     
     def getCardArtwork(self, card_id: str) -> str:
         """Get artwork path for a specific card ID"""
