@@ -27,7 +27,7 @@ project_root/
 ├── desktop_ui/
 │   ├── __init__.py
 │   ├── app.py                       # Qt application lifecycle
-│   ├── coordinator.py               # Bridge async core with sync Qt
+│   ├── desktop_coordinator.py               # Bridge async core with sync Qt
 │   ├── qt_models/
 │   │   ├── __init__.py
 │   │   └── card_model.py            # Qt-specific model wrapper
@@ -126,7 +126,7 @@ project_root/
 - Application lifecycle management
 - Resource cleanup on exit
 
-**`desktop_ui/coordinator.py`** - Async/Sync bridge
+**`desktop_ui/desktop_coordinator.py`** - Async/Sync bridge
 - Bridge between async core layer and synchronous Qt
 - Handle Qt thread safety
 - Coordinate data loading with UI updates

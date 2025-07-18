@@ -4,7 +4,7 @@ import asyncio
 import threading
 from typing import List, Optional, Dict, Any
 from PySide6.QtCore import QObject, Slot, Signal, Property
-from core.coordinator import YotoCoordinator
+from core.yoto_coordinator import YotoCoordinator
 from core.data_models import Card
 
 logger = logging.getLogger(__name__)
