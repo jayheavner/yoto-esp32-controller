@@ -42,10 +42,12 @@ class YotoCoordinator:
         self.library: Dict[str, Card] = {}
         self._callbacks: List[Callable[[], None]] = []
         self._task: Optional[asyncio.Task] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     async def start(self) -> None:
         """Authenticate and start the update loop."""
         await self._init_manager()
+        self._loop = asyncio.get_running_loop()
         self._task = asyncio.create_task(self._update_loop())
 
     async def stop(self) -> None:
@@ -101,6 +103,10 @@ class YotoCoordinator:
             try:
                 await asyncio.to_thread(self.manager.check_and_refresh_token)
                 await asyncio.to_thread(self.manager.update_players_status)
+                if self.manager.mqtt_client is None:
+                    await asyncio.to_thread(
+                        self.manager.connect_to_events, self._on_event
+                    )
                 await asyncio.sleep(0)  # allow cancellation
                 self._update_state_from_player()
                 self._notify_listeners()
@@ -110,6 +116,19 @@ class YotoCoordinator:
 
     def _on_event(self) -> None:
         """MQTT event callback."""
+        if self.manager:
+            for player in self.manager.players.values():
+                if player.card_id and player.chapter_key:
+                    card = self.manager.library.get(player.card_id)
+                    if (
+                        card is None
+                        or not card.chapters
+                        or player.chapter_key not in card.chapters
+                    ):
+                        if self._loop:
+                            asyncio.run_coroutine_threadsafe(
+                                self.get_card_chapters(player.card_id), self._loop
+                            )
         self._update_state_from_player()
         self._notify_listeners()
 
