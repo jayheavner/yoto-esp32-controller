@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
-from desktop_ui.coordinator import DesktopCoordinator
+from desktop_ui.desktop_coordinator import DesktopCoordinator
 from desktop_ui.qt_models.card_model import CardModel
 
 
