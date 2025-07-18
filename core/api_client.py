@@ -20,6 +20,34 @@ APIRequestError = YotoException
 
 
 class YotoAPIClient:
+    def _parse_key(self, key: Optional[str]) -> int:
+        """Return numeric portion of a key string, defaulting to 1."""
+        if not key:
+            return 1
+        digits = "".join(ch for ch in str(key) if ch.isdigit())
+        if digits:
+            try:
+                return int(digits)
+            except ValueError:
+                pass
+        return 1
+    def _resolve_device_id(self) -> Optional[str]:
+        """Return the target device id.
+
+        Uses ``YOTO_DEVICE_ID`` if set, otherwise falls back to the first
+        available player from the authenticated ``YotoManager``.
+        """
+        device_id = os.getenv("YOTO_DEVICE_ID")
+        if device_id:
+            return device_id
+        if self.manager and self.manager.players:
+            first_id = next(iter(self.manager.players))
+            logger.debug(
+                "YOTO_DEVICE_ID not set, defaulting to first device %s", first_id
+            )
+            return first_id
+        logger.error("YOTO_DEVICE_ID environment variable not set")
+        return None
     def _get_card_title(self, card_id: str) -> str:
         """Return the card title for a given card_id, or the card_id if not found."""
         card = self.library.get(card_id)
@@ -36,9 +64,8 @@ class YotoAPIClient:
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         player = self.manager.players.get(device_id)
         if not player:
@@ -66,9 +93,8 @@ class YotoAPIClient:
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         player = self.manager.players.get(device_id)
         if not player:
@@ -88,9 +114,8 @@ class YotoAPIClient:
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         player = self.manager.players.get(device_id)
         if not player:
@@ -107,9 +132,8 @@ class YotoAPIClient:
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         player = self.manager.players.get(device_id)
         if not player:
@@ -127,9 +151,8 @@ class YotoAPIClient:
             logger.error("YotoManager not initialized")
             return
 
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
 
         player = self.manager.players.get(device_id)
@@ -146,24 +169,22 @@ class YotoAPIClient:
             logger.info("No chapters available for card %s", player.card_id)
             return
 
-        try:
-            current = int(player.track_key or player.chapter_key or "1")
-        except ValueError:
-            current = 1
+        current = self._parse_key(player.track_key or player.chapter_key)
 
         if current >= len(chapters):
             logger.info("Already at last track")
             return
 
-        next_key = current + 1
-        logger.info("Playing chapter %02d of card %s", next_key, player.card_id)
+        next_index = current  # current is 1-based
+        next_key_str = chapters[next_index]["key"] if next_index < len(chapters) else str(next_index + 1).zfill(2)
+        logger.info("Playing chapter %s of card %s", next_key_str, player.card_id)
         self.manager.play_card(
             device_id,
             player.card_id,
             secondsIn=0,
             cutoff=0,
-            chapterKey=str(next_key).zfill(2),
-            trackKey=next_key,
+            chapterKey=str(next_key_str),
+            trackKey=self._parse_key(next_key_str),
         )
         # Manually refresh state because the device may not emit an update
         if self.manager:
@@ -177,9 +198,8 @@ class YotoAPIClient:
             logger.error("YotoManager not initialized")
             return
 
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
 
         player = self.manager.players.get(device_id)
@@ -196,24 +216,22 @@ class YotoAPIClient:
             logger.info("No chapters available for card %s", player.card_id)
             return
 
-        try:
-            current = int(player.track_key or player.chapter_key or "1")
-        except ValueError:
-            current = 1
+        current = self._parse_key(player.track_key or player.chapter_key)
 
         if current <= 1:
             logger.info("Already at first track")
             return
 
-        prev_key = current - 1
-        logger.info("Playing chapter %02d of card %s", prev_key, player.card_id)
+        prev_index = current - 2  # convert 1-based to list index then back one
+        prev_key_str = chapters[prev_index]["key"] if prev_index >= 0 else str(prev_index + 1).zfill(2)
+        logger.info("Playing chapter %s of card %s", prev_key_str, player.card_id)
         self.manager.play_card(
             device_id,
             player.card_id,
             secondsIn=0,
             cutoff=0,
-            chapterKey=str(prev_key).zfill(2),
-            trackKey=prev_key,
+            chapterKey=str(prev_key_str),
+            trackKey=self._parse_key(prev_key_str),
         )
         # Manually refresh state because the device may not emit an update
         if self.manager:
@@ -310,9 +328,8 @@ class YotoAPIClient:
     def _update_state_from_player(self) -> None:
         if not self.manager:
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         player = self.manager.players.get(device_id)
         if not player:
@@ -437,9 +454,8 @@ class YotoAPIClient:
     def set_sleep_timer(self, seconds: int) -> None:
         if not self.manager:
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         self.manager.set_sleep(device_id, seconds)
 
@@ -452,9 +468,8 @@ class YotoAPIClient:
     def _apply_config(self, **kwargs: Any) -> None:
         if not self.manager:
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         config = YotoPlayerConfig(**kwargs)
         self.manager.set_player_config(device_id, config)
@@ -462,9 +477,8 @@ class YotoAPIClient:
     def _set_alarm_state(self, index: int, enabled: bool) -> None:
         if not self.manager:
             return
-        device_id = os.getenv("YOTO_DEVICE_ID")
+        device_id = self._resolve_device_id()
         if not device_id:
-            logger.error("YOTO_DEVICE_ID environment variable not set")
             return
         self.manager.update_players_status()
         player = self.manager.players.get(device_id)
