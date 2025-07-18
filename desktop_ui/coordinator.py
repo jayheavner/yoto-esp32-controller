@@ -1,9 +1,10 @@
 import os
 import logging
 import asyncio
+import threading
 from typing import List, Optional, Dict, Any
 from PySide6.QtCore import QObject, Slot, Signal, Property
-from core.api_client import YotoAPIClient
+from core.coordinator import YotoCoordinator
 from core.data_models import Card
 
 logger = logging.getLogger(__name__)
@@ -29,16 +30,19 @@ class DesktopCoordinator(QObject):
     
     def __init__(self):
         super().__init__()
-        self.api_client: Optional[YotoAPIClient] = None
+        self.coordinator: Optional[YotoCoordinator] = None
         self._is_authenticated = False
+        self._loop = asyncio.new_event_loop()
+        self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._loop_thread.start()
 
         logger.info("Creating DesktopCoordinator instance")
         # Initialize and start monitoring state automatically
         self._initialize_client()
     
     def _initialize_client(self) -> None:
-        """Initialize API client and start state monitoring"""
-        logger.debug("Initializing API client")
+        """Initialize async coordinator and start state monitoring"""
+        logger.debug("Initializing coordinator")
         try:
             username = os.getenv("YOTO_USERNAME")
             password = os.getenv("YOTO_PASSWORD")
@@ -46,18 +50,20 @@ class DesktopCoordinator(QObject):
             logger.debug(
                 "Init credentials: username=%s device_id=%s", bool(username), device_id
             )
-            
+
             if username and password:
-                self.api_client = YotoAPIClient()
-                if self.api_client.authenticate(username, password):
-                    self._is_authenticated = True
-                    # Preload library for card titles
-                    self.api_client.get_library()
-                    # Connect to state changes for automatic UI updates
-                    self.api_client.add_state_callback(self._on_state_change)
-                    logger.info("Coordinator initialized with MQTT state monitoring")
-                else:
-                    logger.warning("Authentication failed during coordinator initialization")
+                self.coordinator = YotoCoordinator(
+                    username,
+                    password,
+                    device_id=device_id,
+                )
+                future = asyncio.run_coroutine_threadsafe(
+                    self.coordinator.start(), self._loop
+                )
+                future.result()
+                self._is_authenticated = True
+                self.coordinator.add_listener(self._on_state_change)
+                logger.info("Coordinator initialized with MQTT state monitoring")
             else:
                 logger.warning("No credentials available for coordinator initialization")
         except Exception as exc:
@@ -65,10 +71,10 @@ class DesktopCoordinator(QObject):
     
     def _on_state_change(self) -> None:
         """Handle state changes from MQTT"""
-        if not self.api_client:
+        if not self.coordinator:
             return
-        status = self.api_client.playback_status
-        card = getattr(self.api_client, "active_card_id", None)
+        status = self.coordinator.playback_status
+        card = self.coordinator.active_card_id
         if status not in ["playing", "paused", "stopped"]:
             logger.warning(f"Unexpected playback status for further scope: {status}")
         # Only log if status or card has changed since last call
@@ -93,85 +99,85 @@ class DesktopCoordinator(QObject):
     @Property(bool, notify=playbackStateChanged)
     def isPlaying(self) -> bool:
         """True if currently playing audio"""
-        if not self.api_client:
+        if not self.coordinator:
             return False
-        return self.api_client.playback_status == "playing"
+        return self.coordinator.playback_status == "playing"
 
     @Property(bool, notify=playbackStateChanged)
     def isPaused(self) -> bool:
         """True if playback is currently paused"""
-        if not self.api_client:
+        if not self.coordinator:
             return False
-        return self.api_client.playback_status == "paused"
+        return self.coordinator.playback_status == "paused"
 
     @Property(bool, notify=activeCardChanged)
     def showNowPlaying(self) -> bool:
         """True if there's an active card (playing or paused)"""
-        if not self.api_client:
+        if not self.coordinator:
             return False
-        value = self.api_client.active_card_id is not None
+        value = self.coordinator.active_card_id is not None
         logger.debug(
             "showNowPlaying property -> %s (card=%s)",
             value,
-            self.api_client.active_card_id,
+            self.coordinator.active_card_id,
         )
         return value
 
     @Property(bool, notify=activeCardChanged)
     def hasActiveContent(self) -> bool:
         """True if a card is loaded on the device"""
-        if not self.api_client:
+        if not self.coordinator:
             return False
-        return bool(self.api_client.active_card_id)
+        return bool(self.coordinator.active_card_id)
 
     @Property(str, notify=playbackStateChanged)
     def playbackStatus(self) -> str:
         """Current playback status: playing, paused, stopped"""
-        if not self.api_client:
+        if not self.coordinator:
             return "stopped"
-        return self.api_client.playback_status
+        return self.coordinator.playback_status
 
     @Property(str, notify=activeCardChanged)
     def activeCardId(self) -> str:
         """ID of the currently active card"""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-        return getattr(self.api_client, 'active_card_id', '') or ""
+        return self.coordinator.active_card_id or ""
     
     @Property(str, notify=activeCardChanged)
     def currentCardTitle(self) -> str:
         """Title of the currently active card from MQTT."""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-        return getattr(self.api_client, "current_card_title", "") or ""
+        return self.coordinator.current_card_title or ""
     
     @Property(str, notify=activeCardChanged)
     def activeCardImagePath(self) -> str:
         """File URL to the active card's artwork."""
-        if not self.api_client or not self.api_client.active_card_id:
+        if not self.coordinator or not self.coordinator.active_card_id:
             return ""
-        return self.getCardArtwork(self.api_client.active_card_id)
+        return self.getCardArtwork(self.coordinator.active_card_id)
 
     @Property(str, notify=playbackStateChanged)
     def currentChapterTitle(self) -> str:
         """Title of the chapter currently playing."""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-        return getattr(self.api_client, "current_chapter_title", "") or ""
+        return self.coordinator.current_chapter_title or ""
     
     @Property(str, notify=playbackStateChanged)
     def currentTrackTitle(self) -> str:
         """Title of the currently playing track."""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-        return getattr(self.api_client, "current_track_title", "") or ""
+        return self.coordinator.current_track_title or ""
     
     @Property(int, notify=playbackStateChanged)
     def trackPosition(self) -> int:
         """Current playback position in seconds"""
-        if not self.api_client:
+        if not self.coordinator:
             return 0
-        value = getattr(self.api_client, 'track_position', 0)
+        value = self.coordinator.track_position
         if isinstance(value, int):
             return value
         try:
@@ -182,9 +188,9 @@ class DesktopCoordinator(QObject):
     @Property(int, notify=playbackStateChanged)
     def trackLength(self) -> int:
         """Total track length in seconds"""
-        if not self.api_client:
+        if not self.coordinator:
             return 0
-        value = getattr(self.api_client, 'track_length', 0)
+        value = self.coordinator.track_length
         if isinstance(value, int):
             return value
         try:
@@ -204,13 +210,15 @@ class DesktopCoordinator(QObject):
     @Property(str, notify=playbackStateChanged)
     def currentChapterIconUrl(self) -> str:
         """Icon URL for the chapter currently playing, if available."""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-        card_id = getattr(self.api_client, "active_card_id", None)
-        chapter_title = getattr(self.api_client, "current_chapter_title", None)
+        card_id = self.coordinator.active_card_id
+        chapter_title = self.coordinator.current_chapter_title
         if not card_id or not chapter_title:
             return ""
-        chapters = self.api_client.get_card_chapters(card_id)
+        chapters = asyncio.run_coroutine_threadsafe(
+            self.coordinator.get_card_chapters(card_id), self._loop
+        ).result()
         if not chapters:
             return ""
         for chap in chapters:
@@ -220,12 +228,13 @@ class DesktopCoordinator(QObject):
     
     def getCardArtwork(self, card_id: str) -> str:
         """Get artwork path for a specific card ID"""
-        if not self.api_client:
+        if not self.coordinator:
             return ""
-
         # Get the library to find the card
         try:
-            cards = self.api_client.get_library()
+            cards = asyncio.run_coroutine_threadsafe(
+                self.coordinator.get_library(), self._loop
+            ).result()
             for card in cards:
                 if card.id == card_id and card.art_path and card.art_path.exists():
                     from PySide6.QtCore import QUrl
@@ -242,8 +251,10 @@ class DesktopCoordinator(QObject):
         """Get library cards, creating client if needed"""
         logger.info("Fetching card library")
         # Use existing client if available and authenticated
-        if self.api_client and self._is_authenticated:
-            cards = self.api_client.get_library()
+        if self.coordinator and self._is_authenticated:
+            cards = asyncio.run_coroutine_threadsafe(
+                self.coordinator.get_library(), self._loop
+            ).result()
             if cards:
                 return cards
         
@@ -255,19 +266,18 @@ class DesktopCoordinator(QObject):
             logger.error("Missing Yoto credentials")
             raise RuntimeError("Set YOTO_USERNAME and YOTO_PASSWORD environment variables")
         
-        if not self.api_client:
-            logger.debug("Creating new YotoAPIClient")
-            self.api_client = YotoAPIClient()
-        
-        if not self.api_client.authenticate(username, password):
-            logger.error("Authentication failed when fetching cards")
-            raise RuntimeError("Authentication failed")
-        
-        self._is_authenticated = True
-        # Add state callback if not already added
-        self.api_client.add_state_callback(self._on_state_change)
-        
-        cards = self.api_client.get_library()
+        if not self.coordinator:
+            self.coordinator = YotoCoordinator(username, password)
+            future = asyncio.run_coroutine_threadsafe(
+                self.coordinator.start(), self._loop
+            )
+            future.result()
+            self.coordinator.add_listener(self._on_state_change)
+            self._is_authenticated = True
+
+        cards = asyncio.run_coroutine_threadsafe(
+            self.coordinator.get_library(), self._loop
+        ).result()
         if not cards:
             logger.error("Failed to load library")
             raise RuntimeError("Failed to load library")
@@ -279,12 +289,14 @@ class DesktopCoordinator(QObject):
     def get_chapters(self, card_id: str) -> List[Dict[str, Any]]:
         """Get chapters for a specific card ID, returns QML-friendly format"""
         logger.info("Fetching chapters for card %s", card_id)
-        if not self.api_client:
-            logger.error("API client not available for chapter lookup")
+        if not self.coordinator:
+            logger.error("Coordinator not available for chapter lookup")
             return []
-            
+
         try:
-            chapters = self.api_client.get_card_chapters(card_id)
+            chapters = asyncio.run_coroutine_threadsafe(
+                self.coordinator.get_card_chapters(card_id), self._loop
+            ).result()
             if chapters is None:
                 logger.info(f"No chapters found for card {card_id}")
                 return []
@@ -313,90 +325,83 @@ class DesktopCoordinator(QObject):
     @Slot()
     def play(self) -> None:
         logger.info("Play requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_play())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.play(), self._loop)
         else:
             logger.warning("Play requested but API client not initialized")
 
     @Slot()
     def pause(self) -> None:
         logger.info("Pause requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_pause())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.pause(), self._loop)
         else:
             logger.warning("Pause requested but API client not initialized")
 
     @Slot()
     def resume(self) -> None:
         logger.info("Resume requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_resume())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.play(), self._loop)
         else:
             logger.warning("Resume requested but API client not initialized")
 
     @Slot()
     def stop(self) -> None:
         logger.info("Stop requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_stop())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.stop_player(), self._loop)
         else:
             logger.warning("Stop requested but API client not initialized")
 
     @Slot()
     def toggle_play_pause(self) -> None:
         logger.info("Toggle play/pause")
-        if not self.api_client:
+        if not self.coordinator:
             logger.warning("Toggle requested but API client not initialized")
             return
-        if self.api_client.playback_status == "playing":
-            asyncio.create_task(self.api_client.async_pause())
+        if self.coordinator.playback_status == "playing":
+            asyncio.run_coroutine_threadsafe(self.coordinator.pause(), self._loop)
         else:
-            asyncio.create_task(self.api_client.async_play())
+            asyncio.run_coroutine_threadsafe(self.coordinator.play(), self._loop)
+
 
     @Slot(str, int)
     def play_card(self, card_id: str, chapter: int = 1) -> None:
         """Play a library card on the player."""
         logger.info("Play card request: %s chapter %s", card_id, chapter)
-        if self.api_client:
-            asyncio.create_task(
-                self.api_client.async_play_card(card_id, chapter)
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(
+                self.coordinator.play_card(card_id, chapter), self._loop
             )
-        else:
-            logger.warning("Play card requested but API client not initialized")
-
-    @Slot(str, int)
-    def play_card(self, card_id: str, chapter: int = 1) -> None:
-        """Play a library card on the player."""
-        logger.info("Play card request: %s chapter %s", card_id, chapter)
-        if self.api_client:
-            self.api_client.play_card(card_id, chapter)
         else:
             logger.warning("Play card requested but API client not initialized")
 
     @Slot()
     def next_track(self) -> None:
         logger.info("Next track requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_next_track())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.next_track(), self._loop)
         else:
             logger.warning("Next track requested but API client not initialized")
 
     @Slot()
     def previous_track(self) -> None:
         logger.info("Previous track requested")
-        if self.api_client:
-            asyncio.create_task(self.api_client.async_previous_track())
+        if self.coordinator:
+            asyncio.run_coroutine_threadsafe(self.coordinator.previous_track(), self._loop)
         else:
             logger.warning("Previous track requested but API client not initialized")
 
     def cleanup(self) -> None:
         """Clean shutdown of coordinator"""
         logger.info("Cleaning up DesktopCoordinator")
-        if self.api_client:
-            # Remove our callback before closing
-            self.api_client.remove_state_callback(self._on_state_change)
-            self.api_client.close()
-            self.api_client = None
+        if self.coordinator:
+            self.coordinator.remove_listener(self._on_state_change)
+            asyncio.run_coroutine_threadsafe(self.coordinator.stop(), self._loop).result()
+            self.coordinator = None
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._loop_thread.join()
         self._is_authenticated = False
         logger.info("Coordinator cleaned up")
 
