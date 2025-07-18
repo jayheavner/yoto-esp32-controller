@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Any
 from datetime import time
 import time as systime
+import asyncio
 
 import requests
 from dotenv import load_dotenv
@@ -49,6 +50,17 @@ class YotoAPIClient:
             return first_id
         logger.error("YOTO_DEVICE_ID environment variable not set")
         return None
+
+    def _ensure_mqtt_connected(self) -> None:
+        """Reconnect to MQTT if the connection has dropped."""
+        if not self.manager:
+            return
+        if not self.is_mqtt_connected:
+            try:
+                self.manager.connect_to_events(self._on_event)
+                logger.info("Reconnected to MQTT events")
+            except Exception as exc:  # pragma: no cover - best effort
+                logger.error("Failed to reconnect MQTT: %s", exc)
     def _get_card_title(self, card_id: str) -> str:
         """Return the card title for a given card_id, or the card_id if not found."""
         card = self.library.get(card_id)
@@ -62,6 +74,7 @@ class YotoAPIClient:
         return card_id
     def play(self) -> None:
         """Start playback on the current device using yoto_api, with diagnostics."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -91,6 +104,7 @@ class YotoAPIClient:
 
     def pause(self) -> None:
         """Pause playback on the current device using yoto_api."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -112,6 +126,7 @@ class YotoAPIClient:
 
     def resume(self) -> None:
         """Resume playback on the current device using yoto_api."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -130,6 +145,7 @@ class YotoAPIClient:
 
     def stop(self) -> None:
         """Stop playback on the current device using yoto_api."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -146,8 +162,45 @@ class YotoAPIClient:
         except Exception as exc:
             logger.error("Failed to stop playback: %s", exc)
 
+    async def async_play(self) -> None:
+        await asyncio.to_thread(self.play)
+
+    async def async_pause(self) -> None:
+        await asyncio.to_thread(self.pause)
+
+    async def async_resume(self) -> None:
+        await asyncio.to_thread(self.resume)
+
+    async def async_stop(self) -> None:
+        await asyncio.to_thread(self.stop)
+
+    async def async_next_track(self) -> None:
+        await asyncio.to_thread(self.next_track)
+
+    async def async_previous_track(self) -> None:
+        await asyncio.to_thread(self.previous_track)
+
+    async def async_play_card(
+        self,
+        card_id: str,
+        chapter: int | str = 1,
+        *,
+        seconds_in: int = 0,
+        cutoff: int = 0,
+        track_key: Optional[int] = None,
+    ) -> None:
+        await asyncio.to_thread(
+            self.play_card,
+            card_id,
+            chapter,
+            seconds_in=seconds_in,
+            cutoff=cutoff,
+            track_key=track_key,
+        )
+
     def next_track(self) -> None:
         """Skip to the next chapter/track on the current device."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -195,6 +248,7 @@ class YotoAPIClient:
 
     def previous_track(self) -> None:
         """Skip to the previous chapter/track on the current device."""
+        self._ensure_mqtt_connected()
         if not self.manager:
             logger.error("YotoManager not initialized")
             return
@@ -250,6 +304,8 @@ class YotoAPIClient:
         track_key: Optional[int] = None,
     ) -> None:
         """Play a specific card/track from the library."""
+
+        self._ensure_mqtt_connected()
 
         if not self.manager:
             logger.error("YotoManager not initialized")
@@ -475,6 +531,9 @@ class YotoAPIClient:
         logger.info("Loaded %d cards from library", len(cards))
         return cards
 
+    async def async_get_library(self, force_refresh: bool = False) -> List[Card]:
+        return await asyncio.to_thread(self.get_library, force_refresh)
+
     def get_card_chapters(self, card_id: str) -> Optional[List[Dict[str, Any]]]:
         if not self.manager:
             return None
@@ -500,6 +559,11 @@ class YotoAPIClient:
             )
         return chapters
 
+    async def async_get_card_chapters(
+        self, card_id: str
+    ) -> Optional[List[Dict[str, Any]]]:
+        return await asyncio.to_thread(self.get_card_chapters, card_id)
+
     # ------------------------------------------------------------------
     def refresh_state(self) -> None:
         """Manually refresh player state from the API."""
@@ -508,6 +572,9 @@ class YotoAPIClient:
         self.manager.check_and_refresh_token()
         self.manager.update_players_status()
         self._update_state_from_player()
+
+    async def async_refresh_state(self) -> None:
+        await asyncio.to_thread(self.refresh_state)
 
     # ------------------------------------------------------------------
     def set_max_volume(self, volume: int, night: bool = False) -> None:

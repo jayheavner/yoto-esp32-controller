@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from typing import List, Optional, Dict, Any
 from PySide6.QtCore import QObject, Slot, Signal, Property
 from core.api_client import YotoAPIClient
@@ -304,7 +305,7 @@ class DesktopCoordinator(QObject):
     def play(self) -> None:
         logger.info("Play requested")
         if self.api_client:
-            self.api_client.play()
+            asyncio.create_task(self.api_client.async_play())
         else:
             logger.warning("Play requested but API client not initialized")
 
@@ -312,7 +313,7 @@ class DesktopCoordinator(QObject):
     def pause(self) -> None:
         logger.info("Pause requested")
         if self.api_client:
-            self.api_client.pause()
+            asyncio.create_task(self.api_client.async_pause())
         else:
             logger.warning("Pause requested but API client not initialized")
 
@@ -320,7 +321,7 @@ class DesktopCoordinator(QObject):
     def resume(self) -> None:
         logger.info("Resume requested")
         if self.api_client:
-            self.api_client.resume()
+            asyncio.create_task(self.api_client.async_resume())
         else:
             logger.warning("Resume requested but API client not initialized")
 
@@ -328,7 +329,7 @@ class DesktopCoordinator(QObject):
     def stop(self) -> None:
         logger.info("Stop requested")
         if self.api_client:
-            self.api_client.stop()
+            asyncio.create_task(self.api_client.async_stop())
         else:
             logger.warning("Stop requested but API client not initialized")
 
@@ -339,16 +340,18 @@ class DesktopCoordinator(QObject):
             logger.warning("Toggle requested but API client not initialized")
             return
         if self.api_client.playback_status == "playing":
-            self.api_client.pause()
+            asyncio.create_task(self.api_client.async_pause())
         else:
-            self.api_client.play()
+            asyncio.create_task(self.api_client.async_play())
 
     @Slot(str, int)
     def play_card(self, card_id: str, chapter: int = 1) -> None:
         """Play a library card on the player."""
         logger.info("Play card request: %s chapter %s", card_id, chapter)
         if self.api_client:
-            self.api_client.play_card(card_id, chapter)
+            asyncio.create_task(
+                self.api_client.async_play_card(card_id, chapter)
+            )
         else:
             logger.warning("Play card requested but API client not initialized")
 
@@ -356,7 +359,7 @@ class DesktopCoordinator(QObject):
     def next_track(self) -> None:
         logger.info("Next track requested")
         if self.api_client:
-            self.api_client.next_track()
+            asyncio.create_task(self.api_client.async_next_track())
         else:
             logger.warning("Next track requested but API client not initialized")
 
@@ -364,7 +367,7 @@ class DesktopCoordinator(QObject):
     def previous_track(self) -> None:
         logger.info("Previous track requested")
         if self.api_client:
-            self.api_client.previous_track()
+            asyncio.create_task(self.api_client.async_previous_track())
         else:
             logger.warning("Previous track requested but API client not initialized")
 
