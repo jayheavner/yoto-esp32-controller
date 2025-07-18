@@ -39,7 +39,7 @@ project_root/
     ├── art/                         # Cached card artwork
     │   └── *.jpg                    # Individual card images
     └── data/                        # Cached library data
-        ├── library.json             # Cached library metadata
+        ├── library.json             # Cached library metadata and card details
         └── last_update.txt          # Cache timestamp
 ```
 
@@ -154,7 +154,7 @@ project_root/
 - Shared between desktop and ESP32 (different resolutions)
 
 **`cache/data/`** - Metadata storage
-- `library.json`: Cached library metadata
+- `library.json`: Cached library metadata and full card information
 - `last_update.txt`: Cache timestamp for refresh logic
 - JSON format for easy parsing on both platforms
 
