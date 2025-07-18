@@ -294,7 +294,6 @@ Item {
                     }
                     
                     onClicked: {
-                        coordinator.toggle_play_pause()
                         if (window.selectedCard) {
                             var stackView = root.parent
                             if (stackView) {
@@ -304,6 +303,13 @@ Item {
                                     "cardImagePath": window.selectedCard.imagePath
                                 })
                             }
+                            if (!coordinator.isPlaying || coordinator.activeCardId !== window.selectedCard.cardId) {
+                                coordinator.play_card(window.selectedCard.cardId, 1)
+                            } else {
+                                coordinator.toggle_play_pause()
+                            }
+                        } else {
+                            coordinator.toggle_play_pause()
                         }
                     }
                 }

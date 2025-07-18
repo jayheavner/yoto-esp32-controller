@@ -343,6 +343,15 @@ class DesktopCoordinator(QObject):
         else:
             self.api_client.play()
 
+    @Slot(str, int)
+    def play_card(self, card_id: str, chapter: int = 1) -> None:
+        """Play a library card on the player."""
+        logger.info("Play card request: %s chapter %s", card_id, chapter)
+        if self.api_client:
+            self.api_client.play_card(card_id, chapter)
+        else:
+            logger.warning("Play card requested but API client not initialized")
+
     @Slot()
     def next_track(self) -> None:
         logger.info("Next track requested")
