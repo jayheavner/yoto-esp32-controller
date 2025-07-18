@@ -71,12 +71,21 @@ class DesktopCoordinator(QObject):
         card = getattr(self.api_client, "active_card_id", None)
         if status not in ["playing", "paused", "stopped"]:
             logger.warning(f"Unexpected playback status for further scope: {status}")
-        logger.info(
+        # Only log if status or card has changed since last call
+        if not hasattr(self, "_last_status"):
+            self._last_status = None
+        if not hasattr(self, "_last_card"):
+            self._last_card = None
+
+        if status != self._last_status or card != self._last_card:
+            logger.info(
             "State change: status=%s card=%s now_playing=%s",
             status,
             card,
             bool(card),
-        )
+            )
+            self._last_status = status
+            self._last_card = card
         self.playbackStateChanged.emit()
         self.activeCardChanged.emit()
 
@@ -352,6 +361,15 @@ class DesktopCoordinator(QObject):
             asyncio.create_task(
                 self.api_client.async_play_card(card_id, chapter)
             )
+        else:
+            logger.warning("Play card requested but API client not initialized")
+
+    @Slot(str, int)
+    def play_card(self, card_id: str, chapter: int = 1) -> None:
+        """Play a library card on the player."""
+        logger.info("Play card request: %s chapter %s", card_id, chapter)
+        if self.api_client:
+            self.api_client.play_card(card_id, chapter)
         else:
             logger.warning("Play card requested but API client not initialized")
 

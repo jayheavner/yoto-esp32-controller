@@ -304,7 +304,6 @@ class YotoAPIClient:
         track_key: Optional[int] = None,
     ) -> None:
         """Play a specific card/track from the library."""
-
         self._ensure_mqtt_connected()
 
         if not self.manager:
