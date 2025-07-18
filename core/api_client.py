@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Any
 from datetime import time
+import time as systime
 
 import requests
 from dotenv import load_dotenv
@@ -238,6 +239,49 @@ class YotoAPIClient:
             self.manager.update_players_status()
         self._update_state_from_player()
         self._notify_state_change()
+
+    def play_card(
+        self,
+        card_id: str,
+        chapter: int | str = 1,
+        *,
+        seconds_in: int = 0,
+        cutoff: int = 0,
+        track_key: Optional[int] = None,
+    ) -> None:
+        """Play a specific card/track from the library."""
+
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+
+        device_id = self._resolve_device_id()
+        if not device_id:
+            return
+
+        if track_key is None:
+            track_key = self._parse_key(str(chapter))
+
+        chap_key_str = str(chapter).zfill(2)
+        logger.info(
+            "Playing card %s chapter %s on device %s", card_id, chap_key_str, device_id
+        )
+
+        try:
+            self.manager.play_card(
+                device_id,
+                card_id,
+                seconds_in,
+                cutoff,
+                chapterKey=chap_key_str,
+                trackKey=track_key,
+            )
+            if self.manager:
+                self.manager.update_players_status()
+            self._update_state_from_player()
+            self._notify_state_change()
+        except Exception as exc:
+            logger.error("Failed to play card %s: %s", card_id, exc)
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:
@@ -264,6 +308,8 @@ class YotoAPIClient:
 
         self.devices: Dict[str, Dict[str, Any]] = {}
         self.library: Dict[str, Card] = {}
+        self._library_timestamp: float = 0.0
+        self._library_cache_seconds: int = 300
 
         self._state_callbacks: List[Callable[[], None]] = []
 
@@ -387,9 +433,18 @@ class YotoAPIClient:
         )
 
     # ------------------------------------------------------------------
-    def get_library(self) -> List[Card]:
+    def get_library(self, force_refresh: bool = False) -> List[Card]:
         if not self.manager:
             return []
+
+        now = systime.time()
+        if (
+            not force_refresh
+            and self.library
+            and (now - self._library_timestamp) < self._library_cache_seconds
+        ):
+            logger.debug("Using cached library data")
+            return list(self.library.values())
 
         self.manager.update_library()
         cards: List[Card] = []
@@ -401,6 +456,7 @@ class YotoAPIClient:
                 card.art_path = art_path
             cards.append(card)
             self.library[cid] = card
+        self._library_timestamp = now
         logger.info("Loaded %d cards from library", len(cards))
         return cards
 
