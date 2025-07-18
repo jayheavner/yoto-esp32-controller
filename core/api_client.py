@@ -239,6 +239,49 @@ class YotoAPIClient:
             self.manager.update_players_status()
         self._update_state_from_player()
         self._notify_state_change()
+
+    def play_card(
+        self,
+        card_id: str,
+        chapter: int | str = 1,
+        *,
+        seconds_in: int = 0,
+        cutoff: int = 0,
+        track_key: Optional[int] = None,
+    ) -> None:
+        """Play a specific card/track from the library."""
+
+        if not self.manager:
+            logger.error("YotoManager not initialized")
+            return
+
+        device_id = self._resolve_device_id()
+        if not device_id:
+            return
+
+        if track_key is None:
+            track_key = self._parse_key(str(chapter))
+
+        chap_key_str = str(chapter).zfill(2)
+        logger.info(
+            "Playing card %s chapter %s on device %s", card_id, chap_key_str, device_id
+        )
+
+        try:
+            self.manager.play_card(
+                device_id,
+                card_id,
+                seconds_in,
+                cutoff,
+                chapterKey=chap_key_str,
+                trackKey=track_key,
+            )
+            if self.manager:
+                self.manager.update_players_status()
+            self._update_state_from_player()
+            self._notify_state_change()
+        except Exception as exc:
+            logger.error("Failed to play card %s: %s", card_id, exc)
     """Wrapper around ``yoto_api`` providing the old client interface."""
 
     def __init__(self, cache_dir: Optional[Path] = None) -> None:

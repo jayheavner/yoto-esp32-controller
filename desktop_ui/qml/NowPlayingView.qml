@@ -340,7 +340,12 @@ Item {
                     }
                     
                     onClicked: {
-                        coordinator.toggle_play_pause()
+                        if (coordinator.isPlaying && coordinator.activeCardId === root.cardId) {
+                            coordinator.toggle_play_pause()
+                        } else {
+                            var chap = currentChapter ? currentChapter.key : 1
+                            coordinator.play_card(root.cardId, parseInt(chap))
+                        }
                     }
                 }
                 
