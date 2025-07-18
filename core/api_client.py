@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Any
 from datetime import time
+import time as systime
 
 import requests
 from dotenv import load_dotenv
@@ -264,6 +265,8 @@ class YotoAPIClient:
 
         self.devices: Dict[str, Dict[str, Any]] = {}
         self.library: Dict[str, Card] = {}
+        self._library_timestamp: float = 0.0
+        self._library_cache_seconds: int = 300
 
         self._state_callbacks: List[Callable[[], None]] = []
 
@@ -387,9 +390,18 @@ class YotoAPIClient:
         )
 
     # ------------------------------------------------------------------
-    def get_library(self) -> List[Card]:
+    def get_library(self, force_refresh: bool = False) -> List[Card]:
         if not self.manager:
             return []
+
+        now = systime.time()
+        if (
+            not force_refresh
+            and self.library
+            and (now - self._library_timestamp) < self._library_cache_seconds
+        ):
+            logger.debug("Using cached library data")
+            return list(self.library.values())
 
         self.manager.update_library()
         cards: List[Card] = []
@@ -401,6 +413,7 @@ class YotoAPIClient:
                 card.art_path = art_path
             cards.append(card)
             self.library[cid] = card
+        self._library_timestamp = now
         logger.info("Loaded %d cards from library", len(cards))
         return cards
 
