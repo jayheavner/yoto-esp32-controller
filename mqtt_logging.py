@@ -5,7 +5,7 @@ import os
 import time
 import logging
 from dotenv import load_dotenv
-from desktop_ui.coordinator import DesktopCoordinator
+from desktop_ui.desktop_coordinator import DesktopCoordinator
 
 load_dotenv()
 

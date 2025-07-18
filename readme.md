@@ -18,6 +18,7 @@ project_root/
 │   ├── api_client.py                # Yoto API wrapper (portable)
 │   ├── cache_manager.py             # Library + artwork caching (portable)
 │   ├── data_models.py               # Card, Library dataclasses (portable)
+│   ├── coordinator.py               # YotoCoordinator – async API + MQTT handler
 │   └── ui_logic/
 │       ├── __init__.py
 │       ├── grid_layout.py           # 3-column grid calculations (portable)
@@ -27,7 +28,7 @@ project_root/
 ├── desktop_ui/
 │   ├── __init__.py
 │   ├── app.py                       # Qt application lifecycle
-│   ├── coordinator.py               # Bridge async core with sync Qt
+│   ├── coordinator.py               # Connect YotoCoordinator to Qt
 │   ├── qt_models/
 │   │   ├── __init__.py
 │   │   └── card_model.py            # Qt-specific model wrapper
@@ -93,6 +94,8 @@ project_root/
 - No external dependencies
 - Serializable for JSON caching
 
+**`core/coordinator.py`** - YotoCoordinator – async API + MQTT handler
+
 ### UI Logic Layer (ESP32 Portable)
 
 **`core/ui_logic/grid_layout.py`** - Grid mathematics
@@ -126,11 +129,10 @@ project_root/
 - Application lifecycle management
 - Resource cleanup on exit
 
-**`desktop_ui/coordinator.py`** - Async/Sync bridge
-- Bridge between async core layer and synchronous Qt
-- Handle Qt thread safety
-- Coordinate data loading with UI updates
-- Error handling and user feedback
+**`desktop_ui/coordinator.py`** - Qt bridge to async coordinator
+- Connects `YotoCoordinator` with the Qt event loop
+- Ensures thread safety for UI updates
+- Handles data loading and user feedback
 
 **`desktop_ui/qt_models/card_model.py`** - Qt model wrapper
 - `QAbstractListModel` implementation
@@ -191,3 +193,18 @@ project_root/
 5. **Phase 5**: Deploy and optimize for ESP32 hardware
 
 This structure provides a clean migration path while maintaining all current functionality and enabling future ESP32 deployment with minimal code duplication.
+
+## Running
+
+Set your credentials in `.env`:
+
+```
+YOTO_USERNAME=your_email
+YOTO_PASSWORD=your_password
+```
+
+Then start the application:
+
+```
+python main.py
+```
