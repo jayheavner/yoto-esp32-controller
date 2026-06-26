@@ -62,6 +62,17 @@ These cost real debugging time — they're baked into `src/main.cpp` and worth k
   on-demand fetches and a persistent MQTT socket can coexist. Check `/heap` `minFreeInternal` before adding
   any more concurrent TLS work.
 
+### Enclosure (3D-printed case)
+
+The STL files for the wall-mount case are in [`3d-print-files/`](3d-print-files/) — these are the exact
+files used to print the housing on the wall:
+
+- **`Yoto-base.stl`** — the back/body that the board mounts into.
+- **`Yoto-face.stl`** — the front bezel framing the 4.3" screen.
+
+Printed in two parts on a standard FDM printer. No supports notes or print settings are bundled — they
+printed fine at typical defaults for a flat-faced bezel.
+
 ---
 
 ## Build & flash
@@ -148,6 +159,7 @@ catalog.json / fam.json / card.json / devices.json   Sample API data (placeholde
 app.html / mock.html    Browser prototypes of the UI (the UX spec the firmware matches)
 oauth_login.py          One-shot browser OAuth login → tokens
 yoto_proxy.py           Desktop dev probe: forwards the Yoto API + validates MQTT before porting to firmware
+3d-print-files/         STLs for the 3D-printed wall-mount case (Yoto-base.stl + Yoto-face.stl)
 ```
 
 The HTML prototypes (`app.html`, `mock.html`) are a click-through of the full app on the real catalog —
