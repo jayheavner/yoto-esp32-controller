@@ -1,0 +1,25 @@
+# PlatformIO / build
+.pio/
+.vscode/
+
+# Python venv (toolchain lives here)
+.venv/
+
+# Secrets — never commit
+.yoto_token
+.yoto_*.json
+*.token
+*.secret
+include/secrets.h
+
+# Generated / cached (regenerable)
+images/
+thumbs/
+index.html
+lib.json
+__pycache__/
+
+# 3D case design assets (large CAD/STL binaries)
+case_files/
+.claude/worktrees/
+.claude/settings.local.json

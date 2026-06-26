@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- Dev-only sim of the firmware's 7-segment night clock (saver_open/saver_tick in
+     src/main.cpp). Same geometry formulas + segment map, so layout bugs show up here
+     without flashing. Open via the repo's preview server: /sevenseg_sim.html -->
+<html><body style="margin:0;background:#444;font-family:sans-serif">
+<div id="panels"></div>
+<script>
+const SEG_MAP = [0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F];
+const DIG_H = [200, 260, 320];
+
+function render(sizeIdx, hh, mm, col, label){
+  const panel = document.createElement('div');
+  panel.style.cssText = 'position:relative;width:800px;height:480px;background:#0A0E1A;margin:10px;display:inline-block';
+  const cap = document.createElement('div');
+  cap.style.cssText = 'position:absolute;top:2px;left:6px;color:#888;font-size:12px';
+  cap.textContent = label;
+  panel.appendChild(cap);
+
+  const H = DIG_H[sizeIdx];
+  const t = Math.floor(H/8), W = Math.floor(H/2), gap = Math.floor(H/16);
+  const vlen = Math.floor((H - 3*t)/2);
+  const total = 4*W + t + 4*gap;
+  // container slides so the VISIBLE cells stay centered (firmware: s_sv_x4 / s_sv_x3)
+  const x4 = Math.floor((800 - total)/2);
+  const x3 = Math.floor((800 - (total - W - gap))/2) - (W + gap);
+  const x0 = hh >= 10 ? x4 : x3, y0 = Math.floor((480 - H)/2);
+  const xs = [x0, x0+W+gap];
+  const xc = xs[1]+W+gap;
+  xs[2] = xc+t+gap; xs[3] = xs[2]+W+gap;
+
+  function bar(x,y,w,h,on){
+    const o = document.createElement('div');
+    const r = Math.min(w,h)/2;
+    o.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`+
+                      `border-radius:${r}px;background:${col};opacity:${on?1:0.06}`;
+    panel.appendChild(o);
+  }
+  // digit values, same rules as saver_tick (blank leading digit under 10 o'clock)
+  const dv = [hh>=10?1:-2, hh%10, Math.floor(mm/10), mm%10];
+  for(let d=0; d<4; ++d){
+    const X = xs[d], Y = y0;
+    const m = dv[d]>=0 ? SEG_MAP[dv[d]] : (dv[d]==-1 ? 0x40 : 0x00);
+    bar(X+t,   Y,                    W-2*t, t,    m&1);        // A
+    bar(X+W-t, Y+t,                  t, vlen,     m&2);        // B
+    bar(X+W-t, Y+Math.floor((H+t)/2),t, vlen,     m&4);        // C
+    bar(X+t,   Y+H-t,                W-2*t, t,    m&8);        // D
+    bar(X,     Y+Math.floor((H+t)/2),t, vlen,     m&16);       // E
+    bar(X,     Y+t,                  t, vlen,     m&32);       // F
+    bar(X+t,   Y+Math.floor((H-t)/2),W-2*t, t,    m&64);       // G
+  }
+  bar(xc, y0+Math.floor(H/3)-Math.floor(t/2),   t, t, true);   // colon
+  bar(xc, y0+Math.floor(2*H/3)-Math.floor(t/2), t, t, true);
+  document.getElementById('panels').appendChild(panel);
+}
+render(2, 7, 42, '#E5352B', 'Large 7:42 bedtime-red');
+render(2, 12, 58, '#3AB06A', 'Large 12:58 wake-green');
+render(1, 9, 5, '#F2EDE0', 'Medium 9:05 daytime-cream');
+render(0, 10, 30, '#E5352B', 'Small 10:30');
+</script>
+</body></html>

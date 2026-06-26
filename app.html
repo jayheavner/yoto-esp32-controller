@@ -1,0 +1,178 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Kiddo's Yoto — prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --red:#e5352b; --red-deep:#b3211a; --sun:#ffb02e; --ink:#23303a; --paper:#fbf7f0; }
+  *{ box-sizing:border-box; margin:0; padding:0; font-family:'Fredoka',system-ui,sans-serif; -webkit-user-select:none; user-select:none; }
+  body{ background:#d9d3c8; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:20px; }
+  .note{ font-size:13px; color:#6b6356; }
+  .frame{ width:800px; height:480px; background:var(--paper); border-radius:24px; overflow:hidden;
+          box-shadow:0 18px 44px rgba(0,0,0,.22); display:flex; flex-direction:column; position:relative; }
+
+  /* HOME */
+  .grid{ flex:1; min-height:0; overflow-y:auto; padding:16px 18px; display:flex; flex-wrap:wrap;
+         gap:16px; align-content:flex-start; justify-content:center; }
+  .tile{ width:122px; height:193px; flex:0 0 auto; border-radius:11px; overflow:hidden; cursor:pointer;
+         box-shadow:0 4px 12px rgba(0,0,0,.20); background:#eee; transition:transform .08s; }
+  .tile:active{ transform:scale(.95); }
+  .tile img{ width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
+  .nowbar{ height:58px; flex:0 0 auto; border-top:1px solid #ece5d8; background:#fff; cursor:pointer;
+           display:flex; align-items:center; gap:14px; padding:0 18px; }
+  .status{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#6b6356;
+           background:#f1ece0; padding:7px 13px; border-radius:999px; flex:0 0 auto; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:#36d07a; box-shadow:0 0 8px #36d07a; }
+  .nb-thumb{ width:40px; height:40px; border-radius:8px; object-fit:cover; }
+  .nb-mini{ width:40px; height:40px; border-radius:8px; background:#ffe1de; display:flex; align-items:center; justify-content:center; color:var(--red); font-size:18px; }
+  .nb-txt{ font-size:15px; color:#3a3a3a; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .nb-txt .muted{ color:#9a9384; }
+  .nb-play{ margin-left:auto; width:42px; height:42px; border-radius:50%; background:var(--red); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:17px; flex:0 0 auto; }
+
+  /* DETAIL */
+  .back{ position:absolute; top:13px; left:13px; width:42px; height:42px; border-radius:50%; cursor:pointer;
+         background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center; font-size:20px; z-index:5; }
+  .d{ flex:1; min-height:0; display:flex; }
+  .dleft{ width:286px; flex:0 0 auto; padding:24px 20px; display:flex; flex-direction:column; align-items:center; gap:16px; background:#fff; }
+  .dcover{ width:184px; height:auto; border-radius:14px; box-shadow:0 10px 24px rgba(0,0,0,.22); }
+  .playbtn{ width:100%; height:54px; border:none; border-radius:15px; background:var(--red); color:#fff; cursor:pointer;
+            font-size:21px; font-weight:600; font-family:'Fredoka'; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 6px 14px rgba(229,53,43,.45); }
+  .playbtn:active{ transform:scale(.98); }
+  .dright{ flex:1; min-width:0; padding:20px 24px 8px 12px; display:flex; flex-direction:column; }
+  .dtitle{ font-size:27px; font-weight:700; color:var(--red); line-height:1.05; }
+  .dsub{ font-size:15px; color:#8a8276; margin:3px 0; }
+  .dsum{ font-size:14px; color:#3a6b50; font-weight:600; margin:8px 0 6px; }
+  .chapters{ flex:1; min-height:0; overflow-y:auto; padding-right:6px; }
+  .chrow{ display:flex; align-items:center; gap:13px; height:52px; border-bottom:2px dotted #e7e0d2; cursor:pointer; }
+  .chrow:active{ background:#fff4f2; }
+  .chnum{ width:30px; height:30px; border-radius:50%; background:var(--sun); color:#6a4400;
+          display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:0 0 auto; }
+  .chttl{ flex:1; font-size:17px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .chdur{ color:#9a9384; font-size:14px; }
+  .chplay{ color:var(--red); font-size:13px; width:22px; text-align:center; }
+
+  /* NOW PLAYING */
+  .np{ background:linear-gradient(150deg,var(--red),var(--red-deep)); color:#fff; height:100%; display:flex; flex-direction:column; padding:14px 30px; }
+  .nptop{ display:flex; align-items:center; justify-content:center; position:relative; height:26px; }
+  .nptop .label{ font-size:15px; font-weight:600; }
+  .nptop .chev{ position:absolute; left:0; font-size:22px; cursor:pointer; }
+  .npmid{ flex:1; min-height:0; display:flex; align-items:center; gap:30px; }
+  .npcover{ width:150px; height:auto; border-radius:14px; box-shadow:0 12px 28px rgba(0,0,0,.4); flex:0 0 auto; }
+  .npinfo{ flex:1; min-width:0; }
+  .npinfo .t{ font-size:27px; font-weight:700; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .npinfo .c{ font-size:18px; opacity:.9; margin-top:2px; }
+  .bar{ height:8px; border-radius:8px; background:rgba(255,255,255,.3); margin:18px 0 6px; position:relative; }
+  .bar i{ position:absolute; left:0; top:0; bottom:0; width:8%; background:#fff; border-radius:8px; }
+  .bar b{ position:absolute; left:8%; top:50%; transform:translate(-50%,-50%); width:18px; height:18px; background:#fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .times{ display:flex; justify-content:space-between; font-size:13px; opacity:.9; }
+  .ctrls{ display:flex; align-items:center; gap:26px; margin-top:14px; }
+  .ic{ font-size:28px; opacity:.95; cursor:pointer; }
+  .big{ width:66px; height:66px; border-radius:50%; background:#fff; color:var(--red); cursor:pointer;
+        display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 6px 16px rgba(0,0,0,.3); }
+  .vol{ margin-left:auto; display:flex; align-items:center; gap:10px; font-size:18px; }
+  .volbar{ width:120px; height:6px; background:rgba(255,255,255,.35); border-radius:6px; position:relative; }
+  .volbar i{ position:absolute; left:0; top:0; bottom:0; width:18%; background:#fff; border-radius:6px; }
+</style></head>
+<body>
+  <div class="note">Interactive prototype · real catalog · <b>visual only — does not command the real player</b></div>
+  <div class="frame" id="app"></div>
+
+<script>
+const PROXY = "http://127.0.0.1:8123";   // wired but UNUSED in prototype (visual only)
+let CATALOG = [];
+const st = { screen:'home', card:null, ch:0, playing:false };
+
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mmss = s => { s=Math.max(0,Math.round(s||0)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const longdur = s => { s=Math.round(s||0); const h=Math.floor(s/3600), m=Math.floor((s%3600)/60); return h? `${h}h ${m}m` : `${m}m`; };
+const cardById = id => CATALOG.find(c=>c.cardId===id);
+
+function nowbarHTML(){
+  if(st.playing && st.card){
+    const ch = st.card.chapters[st.ch] || {};
+    return `<div class="nowbar" data-go="now">
+      <div class="status"><span class="dot"></span>Kiddo's Yoto</div>
+      <img class="nb-thumb" src="${esc(st.card.img)}">
+      <div class="nb-txt">${esc(st.card.title)} &middot; <span class="muted">${esc(ch.title||('Chapter '+(st.ch+1)))}</span></div>
+      <div class="nb-play" data-act="toggle">&#10074;&#10074;</div></div>`;
+  }
+  return `<div class="nowbar">
+    <div class="status"><span class="dot"></span>Kiddo's Yoto</div>
+    <div class="nb-mini">&#9835;</div>
+    <div class="nb-txt muted">Nothing playing &mdash; tap a card to start</div></div>`;
+}
+
+function homeHTML(){
+  const tiles = CATALOG.map(c=>`<div class="tile" data-card="${esc(c.cardId)}"><img src="${esc(c.img)}"></div>`).join('');
+  return `<div class="grid">${tiles}</div>${nowbarHTML()}`;
+}
+
+function detailHTML(){
+  const c = st.card;
+  const total = c.chapters.reduce((a,ch)=>a+(ch.duration||0),0);
+  const rows = c.chapters.map((ch,i)=>`
+    <div class="chrow" data-ch="${i}">
+      <div class="chnum">${i+1}</div>
+      <div class="chttl">${esc(ch.title||('Chapter '+(i+1)))}</div>
+      <div class="chdur">${mmss(ch.duration)}</div><div class="chplay">&#9654;</div></div>`).join('');
+  return `<div class="back" data-go="home">&#8249;</div>
+    <div class="d">
+      <div class="dleft"><img class="dcover" src="${esc(c.img)}"><button class="playbtn" data-act="playstart">&#9654; Play</button></div>
+      <div class="dright">
+        <div class="dtitle">${esc(c.title)}</div><div class="dsub">Yoto</div>
+        <div class="dsum">${c.chapters.length} chapters &middot; ${longdur(total)}</div>
+        <div class="chapters">${rows}</div>
+      </div>
+    </div>${nowbarHTML()}`;
+}
+
+function nowHTML(){
+  const c = st.card, ch = c.chapters[st.ch] || {};
+  const dur = ch.duration||0, pos = Math.min(42, dur);
+  return `<div class="np">
+    <div class="nptop"><span class="chev" data-go="home">&#8964;</span><span class="label">Playing on Kiddo's Yoto</span></div>
+    <div class="npmid">
+      <img class="npcover" src="${esc(c.img)}">
+      <div class="npinfo">
+        <div class="t">${esc(c.title)}</div><div class="c">${esc(ch.title||('Chapter '+(st.ch+1)))}</div>
+        <div class="bar"><i></i><b></b></div>
+        <div class="times"><span>${mmss(pos)}</span><span>-${mmss(dur-pos)}</span></div>
+        <div class="ctrls">
+          <span class="ic" data-act="prev">&#9198;</span>
+          <div class="big" data-act="toggle">${st.playing?'&#10074;&#10074;':'&#9654;'}</div>
+          <span class="ic" data-act="next">&#9197;</span>
+          <span class="vol">&#128264;<span class="volbar"><i></i></span>&#128266;</span>
+        </div>
+      </div>
+    </div></div>`;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = st.screen==='home'? homeHTML() : st.screen==='detail'? detailHTML() : nowHTML();
+}
+
+document.addEventListener('click', e=>{
+  const tile = e.target.closest('[data-card]');
+  if(tile){ st.card = cardById(tile.dataset.card); st.screen='detail'; return render(); }
+  const go = e.target.closest('[data-go]');
+  if(go){ st.screen = go.dataset.go; return render(); }
+  const chrow = e.target.closest('[data-ch]');
+  if(chrow){ st.ch = +chrow.dataset.ch; st.playing=true; st.screen='now'; return render(); }
+  const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
+  if(act==='playstart'){ st.ch=0; st.playing=true; st.screen='now'; return render(); }
+  if(act==='toggle'){ st.playing=!st.playing; return render(); }
+  if(act==='next'){ if(st.ch < st.card.chapters.length-1) st.ch++; return render(); }
+  if(act==='prev'){ if(st.ch>0) st.ch--; return render(); }
+});
+
+// Where real control WOULD go (kept off in the prototype so nobody's room gets blasted):
+// async function cmd(path, body){ return fetch(`${PROXY}/device-v2/<deviceId>/command/${path}`,
+//   {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); }
+
+(async ()=>{
+  CATALOG = await (await fetch('catalog.json')).json();
+  CATALOG.sort((a,b)=> String(b.lastPlayedAt||'').localeCompare(String(a.lastPlayedAt||'')));
+  render();
+})();
+</script>
+</body></html>

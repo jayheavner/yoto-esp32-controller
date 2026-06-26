@@ -1,0 +1,184 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --red:#e5352b; --red-deep:#b3211a; --sun:#ffb02e; --ink:#23303a; --paper:#fbf7f0; }
+  *{ box-sizing:border-box; margin:0; padding:0; font-family:'Fredoka',system-ui,sans-serif; }
+  body{ background:#e9e3d8; padding:28px; color:var(--ink); }
+  h1.pagetitle{ font-size:20px; color:#6b6356; font-weight:600; margin:26px 0 8px; }
+  .cap{ font-size:13px; color:#8a8276; margin:4px 2px 14px; max-width:800px; }
+  .frame{ width:800px; height:480px; background:var(--paper); border-radius:26px; overflow:hidden;
+          box-shadow:0 18px 40px rgba(0,0,0,.18); display:flex; flex-direction:column; position:relative; }
+
+  .hdr{ height:60px; background:linear-gradient(120deg,var(--green),var(--green2)); color:#fff;
+        display:flex; align-items:center; justify-content:space-between; padding:0 22px; flex:0 0 auto; }
+  .hdr .who{ font-size:24px; font-weight:700; }
+  .pill{ background:rgba(255,255,255,.18); padding:6px 13px; border-radius:999px; font-size:14px;
+         display:flex; align-items:center; gap:7px; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:#7CFFB0; box-shadow:0 0 8px #7CFFB0; }
+  .grid{ flex:1; min-height:0; overflow-y:auto; padding:14px 18px; display:flex; flex-wrap:wrap;
+         gap:16px; align-content:flex-start; justify-content:center; }
+  .tile{ width:122px; height:193px; flex:0 0 auto; border-radius:11px; overflow:hidden;
+         box-shadow:0 4px 12px rgba(0,0,0,.20); background:#eee; }
+  .tile img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .nowbar{ height:56px; flex:0 0 auto; border-top:1px solid #ece5d8; background:#fff;
+           display:flex; align-items:center; gap:14px; padding:0 18px; }
+  .nowbar .mini{ width:38px; height:38px; border-radius:9px; background:#ffe9e1; display:flex;
+                 align-items:center; justify-content:center; color:var(--red); font-size:18px; background:#ffe1de !important; }
+  .muted{ color:#9a9384; font-size:15px; }
+  .status{ display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:#6b6356;
+           background:#f1ece0; padding:7px 13px; border-radius:999px; flex:0 0 auto; }
+
+  /* detail: landscape split */
+  .back{ position:absolute; top:13px; left:13px; width:40px; height:40px; border-radius:50%;
+         background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.18); display:flex; align-items:center;
+         justify-content:center; font-size:19px; z-index:5; }
+  .d{ flex:1; min-height:0; display:flex; }
+  .dleft{ width:286px; flex:0 0 auto; padding:24px 20px; display:flex; flex-direction:column;
+          align-items:center; gap:16px; background:#fff; }
+  .dcover{ width:184px; height:auto; border-radius:14px; box-shadow:0 10px 24px rgba(0,0,0,.22); }
+  .playbtn{ width:100%; height:54px; border:none; border-radius:15px; background:var(--red); color:#fff;
+            font-size:21px; font-weight:600; font-family:'Fredoka'; display:flex; align-items:center;
+            justify-content:center; gap:9px; box-shadow:0 6px 14px rgba(229,53,43,.45); }
+  .dright{ flex:1; min-width:0; padding:22px 24px 8px 10px; display:flex; flex-direction:column; }
+  .dtitle{ font-size:28px; font-weight:700; color:var(--red); line-height:1.04; }
+  .dsub{ font-size:15px; color:#8a8276; margin:3px 0; }
+  .dsum{ font-size:14px; color:var(--green); font-weight:600; margin:8px 0 4px; }
+  .chapters{ flex:1; min-height:0; overflow-y:auto; padding-right:6px; }
+  .chrow{ display:flex; align-items:center; gap:13px; height:50px; border-bottom:2px dotted #e7e0d2; }
+  .chnum{ width:28px; height:28px; border-radius:50%; background:var(--sun); color:#6a4400;
+          display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex:0 0 auto; }
+  .chttl{ flex:1; font-size:17px; }
+  .chdur{ color:#9a9384; font-size:14px; }
+  .chplay{ color:var(--red); font-size:13px; width:22px; text-align:center; }
+
+  /* now playing: landscape */
+  .np{ background:linear-gradient(150deg,var(--red),var(--red-deep)); color:#fff; height:100%;
+       display:flex; flex-direction:column; padding:14px 30px; }
+  .nptop{ display:flex; align-items:center; justify-content:center; position:relative; height:26px; }
+  .nptop .label{ font-size:15px; font-weight:600; }
+  .nptop .chev{ position:absolute; left:0; font-size:20px; }
+  .npmid{ flex:1; min-height:0; display:flex; align-items:center; gap:30px; }
+  .npcover{ width:150px; height:auto; border-radius:14px; box-shadow:0 12px 28px rgba(0,0,0,.4); flex:0 0 auto; }
+  .npinfo{ flex:1; min-width:0; }
+  .npinfo .t{ font-size:28px; font-weight:700; }
+  .npinfo .c{ font-size:18px; opacity:.9; margin-top:2px; }
+  .bar{ height:8px; border-radius:8px; background:rgba(255,255,255,.3); margin:18px 0 6px; position:relative; }
+  .bar i{ position:absolute; left:0; top:0; bottom:0; width:9%; background:#fff; border-radius:8px; }
+  .bar b{ position:absolute; left:9%; top:50%; transform:translate(-50%,-50%); width:18px; height:18px;
+          background:#fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .times{ display:flex; justify-content:space-between; font-size:13px; opacity:.9; }
+  .ctrls{ display:flex; align-items:center; gap:26px; margin-top:14px; }
+  .ic{ font-size:28px; opacity:.95; }
+  .big{ width:66px; height:66px; border-radius:50%; background:#fff; color:var(--red);
+        display:flex; align-items:center; justify-content:center; font-size:27px; box-shadow:0 6px 16px rgba(0,0,0,.3); }
+  .vol{ margin-left:auto; font-size:20px; opacity:.95; }
+</style></head><body>
+
+<h1 class="pagetitle">LANDSCAPE &middot; 1 &middot; My Cards</h1>
+<div class="cap">Full cards (122px), ~5 per row, ~1.5 rows before scrolling. Wider but shorter than portrait, so fewer rows show.</div>
+<div class="frame">
+  <div class="grid"><div class="tile"><img src="images/eP2AO.png"></div>
+<div class="tile"><img src="images/qQAag.png"></div>
+<div class="tile"><img src="images/bJZU2.png"></div>
+<div class="tile"><img src="images/djsCT.png"></div>
+<div class="tile"><img src="images/4xtHu.png"></div>
+<div class="tile"><img src="images/6VhiJ.png"></div>
+<div class="tile"><img src="images/d1Aqe.png"></div>
+<div class="tile"><img src="images/wQMQl.png"></div>
+<div class="tile"><img src="images/4n4KH.png"></div>
+<div class="tile"><img src="images/j8b4j.png"></div>
+<div class="tile"><img src="images/dJeEk.png"></div>
+<div class="tile"><img src="images/h2uvW.png"></div>
+<div class="tile"><img src="images/21Ws8.png"></div>
+<div class="tile"><img src="images/7CaVW.png"></div>
+<div class="tile"><img src="images/b2qyC.png"></div>
+<div class="tile"><img src="images/6FG42.png"></div>
+<div class="tile"><img src="images/iqKGD.png"></div>
+<div class="tile"><img src="images/5lYfS.png"></div>
+<div class="tile"><img src="images/bXIFq.png"></div>
+<div class="tile"><img src="images/3RSZy.png"></div>
+<div class="tile"><img src="images/4RSQj.png"></div>
+<div class="tile"><img src="images/iILJy.png"></div>
+<div class="tile"><img src="images/eLHVc.png"></div>
+<div class="tile"><img src="images/97Weq.png"></div>
+<div class="tile"><img src="images/9SiDm.png"></div>
+<div class="tile"><img src="images/eDwz6.png"></div>
+<div class="tile"><img src="images/8lD2D.png"></div>
+<div class="tile"><img src="images/g5LPD.png"></div>
+<div class="tile"><img src="images/8XhyE.png"></div>
+<div class="tile"><img src="images/8a0iH.png"></div>
+<div class="tile"><img src="images/6etI4.png"></div>
+<div class="tile"><img src="images/bwd5d.png"></div>
+<div class="tile"><img src="images/iXwvb.png"></div>
+<div class="tile"><img src="images/iS8dZ.png"></div>
+<div class="tile"><img src="images/fYdyg.png"></div>
+<div class="tile"><img src="images/13Xj5.png"></div>
+<div class="tile"><img src="images/66J3c.png"></div>
+<div class="tile"><img src="images/7AZR8.png"></div>
+<div class="tile"><img src="images/2hXIN.png"></div>
+<div class="tile"><img src="images/6GCvN.png"></div>
+<div class="tile"><img src="images/cNzJr.png"></div>
+<div class="tile"><img src="images/391SS.png"></div>
+<div class="tile"><img src="images/6SwVe.png"></div>
+<div class="tile"><img src="images/8fWYN.png"></div>
+<div class="tile"><img src="images/dDu0p.png"></div>
+<div class="tile"><img src="images/3j1hq.png"></div>
+<div class="tile"><img src="images/dz6Yj.png"></div>
+<div class="tile"><img src="images/fqpk5.png"></div>
+<div class="tile"><img src="images/6D2RI.png"></div></div>
+  <div class="nowbar">
+    <div class="status"><span class="dot"></span>Kiddo&rsquo;s Yoto</div>
+    <div class="mini">&#9835;</div><div class="muted">Nothing playing &mdash; tap a card to start</div>
+  </div>
+</div>
+
+<h1 class="pagetitle">LANDSCAPE &middot; 2 &middot; Detail + chapters</h1>
+<div class="cap">Landscape's advantage: cover + Play on the left, the full chapter list on the right at the same time.</div>
+<div class="frame">
+  <div class="back">&#8249;</div>
+  <div class="d">
+    <div class="dleft"><img class="dcover" src="images/eDwz6.png"><button class="playbtn">&#9654; Play</button></div>
+    <div class="dright">
+      <div class="dtitle">Treasure Island</div><div class="dsub">Yoto</div>
+      <div class="dsum">18 chapters &middot; 2h 30m</div>
+      <div class="chapters"><div class="chrow"><div class="chnum">1</div><div class="chttl">Chapter 1</div><div class="chdur">7:58</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">2</div><div class="chttl">Chapter 2</div><div class="chdur">11:08</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">3</div><div class="chttl">Chapter 3</div><div class="chdur">12:09</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">4</div><div class="chttl">Chapter 4</div><div class="chdur">8:57</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">5</div><div class="chttl">Chapter 5</div><div class="chdur">9:28</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">6</div><div class="chttl">Chapter 6</div><div class="chdur">5:20</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">7</div><div class="chttl">Chapter 7</div><div class="chdur">5:29</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">8</div><div class="chttl">Chapter 8</div><div class="chdur">6:13</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">9</div><div class="chttl">Chapter 9</div><div class="chdur">5:58</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">10</div><div class="chttl">Chapter 10</div><div class="chdur">8:04</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">11</div><div class="chttl">Chapter 11</div><div class="chdur">8:39</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">12</div><div class="chttl">Chapter 12</div><div class="chdur">9:05</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">13</div><div class="chttl">Chapter 13</div><div class="chdur">9:14</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">14</div><div class="chttl">Chapter 14</div><div class="chdur">9:30</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">15</div><div class="chttl">Chapter 15</div><div class="chdur">9:06</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">16</div><div class="chttl">Chapter 16</div><div class="chdur">9:42</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">17</div><div class="chttl">Chapter 17</div><div class="chdur">8:22</div><div class="chplay">&#9654;</div></div>
+<div class="chrow"><div class="chnum">18</div><div class="chttl">Chapter 18</div><div class="chdur">5:42</div><div class="chplay">&#9654;</div></div></div>
+    </div>
+  </div>
+  <div class="nowbar"><div class="status"><span class="dot"></span>Kiddo&rsquo;s Yoto</div><div class="mini">&#9835;</div><div class="muted">Nothing playing</div></div>
+</div>
+
+<h1 class="pagetitle">LANDSCAPE &middot; 3 &middot; Now playing</h1>
+<div class="cap">Cover left, controls right.</div>
+<div class="frame">
+  <div class="np">
+    <div class="nptop"><span class="chev">&#8964;</span><span class="label">Playing on Kiddo&rsquo;s Yoto</span></div>
+    <div class="npmid">
+      <img class="npcover" src="images/eDwz6.png">
+      <div class="npinfo">
+        <div class="t">Treasure Island</div><div class="c">Chapter 1</div>
+        <div class="bar"><i></i><b></b></div>
+        <div class="times"><span>0:42</span><span>-7:16</span></div>
+        <div class="ctrls"><span class="ic">&#9198;</span><div class="big">&#10074;&#10074;</div><span class="ic">&#9197;</span>
+          <span class="vol">&#128264; &#9472;&#9472;&#9472;&#9679;&#9472;&#9472; &#128266;</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>
